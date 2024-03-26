@@ -1,14 +1,7 @@
 # RPi-status-via-luma #
 
-To provide the Status of your Raspberry (tested on Zero, 2, 3 and 4) to an ST7735S OLED Display.
-
-I use this script to get a quick and up-to-date status of the system every time I walk past my Raspberry Pis.
-In this way I can see at a glance the current workload, whether problems are looming and whether the service is currently running.
-
-My Raspberrys prepared to mounted in my 19Rack:
-![Raspberry Pis im Rack](https://media.printables.com/media/prints/300085/images/2715870_a53f284c-180c-4feb-9401-bd60474f65ca/thumbs/inside/1920x1440/jpg/img20221108094538.webp)
-
-Please also note my previous solution based on Wireshark 144: https://github.com/Starwhooper/RPi-status-on-OLED
+I was looking for a way to measure the current energy consumption of my household and compare it with the photovoltaic system.
+Basically, I'm not interested in long-term storage of the data, but rather in order to be able to spontaneously determine whether I'm currently purchasing energy from the grid or am already giving energy away to the grid operator
 
 ## Installation
 install all needed packages to prepare the software environtent of your Raspberry Pi:
