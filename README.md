@@ -1,4 +1,4 @@
-# RPi-status-via-luma #
+# RPi-household-energy-status #
 
 I was looking for a way to measure the current energy consumption of my household and compare it with the photovoltaic system.
 Basically, I'm not interested in long-term storage of the data, but rather in order to be able to spontaneously determine whether I'm currently purchasing energy from the grid or am already giving energy away to the grid operator
