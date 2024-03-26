@@ -1,6 +1,6 @@
 #!/usr/bin/python3
-# Creator: Thiemo Schuff, thiemo@schuff.eu
-# Source: https://github.com/Starwhooper/RPi-status-via-luna
+# Creator: Thiemo Schuff
+# Source: https://github.com/Starwhooper/RPi-household-energy-status
 
 #######################################################
 #
