@@ -64,30 +64,30 @@ inverter_total =  0
 def stats(device):
  global invertertime
  global inverter_total
+ inverter_total = 0
  global inverter_now
+ global sunbeam
+ try: sunbeam
+ except: sunbeam = 0 
  try:
   invertertime
  except:
   invertertime = datetime(1977, 1, 1)
  
  with canvas(device, dither=True) as draw:
+  #####get inverter    
   if (invertertime <= datetime.now() - timedelta(minutes=1)):
-   print(invertertime)   
-   print(datetime.now())
-   print(timedelta(minutes=1))
-   inverter = requests.get(inverterurl)
-   if inverter.status_code == 200:
+   try:
+    inverter = requests.get(inverterurl, timeout=1)
     html_content = inverter.text
-    try:
-     inverter_total = re.search(r'var\s+webdata_total_e\s*=\s*"([^"]+)"', inverter.text).group(1)
-     inverter_total = float(inverter_total)
-     inverter_total = round(inverter_total)
-     inverter_now = re.search(r'var\s+webdata_now_p\s*=\s*"([^"]+)"', inverter.text).group(1)
-     invertertime = datetime.now()
-    except:
-     inverter_now = 0 
-   else:
-    inverter_now = 0 
+    inverter_total = re.search(r'var\s+webdata_total_e\s*=\s*"([^"]+)"', inverter.text).group(1)
+    inverter_total = float(inverter_total)
+    inverter_total = round(inverter_total)
+    inverter_now = re.search(r'var\s+webdata_now_p\s*=\s*"([^"]+)"', inverter.text).group(1)
+   except:
+
+    inverter_now = 0
+   invertertime = datetime.now()        
   
   #####get electricitymeter
   try:
@@ -104,8 +104,6 @@ def stats(device):
       electricitymeter_total = 0
       electricitymeter_now = 0
   
-  #####image
-
   #######house
   draw.rectangle([(40,60),(128-40,128-20)], fill = "black", outline = "white", width = 2)
   draw.line([(40,60),(128/2,20)], fill = "red", width = 2)
@@ -114,9 +112,17 @@ def stats(device):
 
   #######sun
   draw.ellipse([(-40,-40),(40,40)], fill = "yellow")
+  if inverter_now >= 1:
+   sunbeam=sunbeam+4
+   print(sunbeam)
+   draw.ellipse([(-40-sunbeam,-40-sunbeam),(40+sunbeam,40+sunbeam)], outline = "yellow")
+   if sunbeam >= 20: sunbeam = 0
   draw.text((1,1), 'total:', font = font, fill = 'black')
-  draw.text((1,11), str(inverter_total), font = font, fill = 'black')
+  if inverter_total == 0: draw.text((1,11), '????', font = font, fill = 'black')
+  else: draw.text((1,11), str(inverter_total), font = font, fill = 'black')
   draw.text((1,21), 'kWh', font = font, fill = 'black')
+  left, top, right, bottom = draw.textbbox((10,50), str(inverter_now) + 'W', font=font)
+  draw.rectangle((left-1, top-1, right+1, bottom+1), fill="black")
   draw.text((10,50), str(inverter_now) + 'W', font = font, fill = 'white')
 
   #######powerline
