@@ -8,8 +8,8 @@
   "inverter": {
 		"address": "192.168.179.2",
 		"site": "status.html",
-		"user": "sad-min",
-		"pw": "J-62d+X#icxL"
+		"user": "",
+		"pw": ""
 	},
 	"electricitymeter": {
 		"address": "192.168.179.37",
