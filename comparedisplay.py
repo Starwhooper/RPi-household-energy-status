@@ -13,7 +13,7 @@ import sys
 try:
  from luma.core.render import canvas
  from PIL import ImageFont
- from PIL import Image, ImageDraw
+# from PIL import Image, ImageDraw
  from urllib.parse import quote
  import json
  import os
@@ -101,12 +101,16 @@ def stats(device):
   else:
       electricitymeter_total = 0
       electricitymeter_now = 0
+
+  #####calculated values:
+  consumption = electricitymeter_now + inverter_now
+
   
   #######house
-  draw.rectangle([(40,45),(128-40,128-20-15)], fill = "black", outline = "white", width = 2)
-  draw.line([(40,45),(128/2,5)], fill = "red", width = 2)
-  draw.line([(128-40,45),(128/2,5)], fill = "red", width = 2)
-  draw.text((55,65), str(electricitymeter_now + inverter_now) + 'W', font = font, fill = 'Yellow')
+  draw.rectangle([(40,45),(device.width-40,device.width-20-15)], fill = "black", outline = "white", width = 2)
+  draw.line([(40,45),(device.width/2,5)], fill = "red", width = 2)
+  draw.line([(device.width-40,45),(device.width/2,5)], fill = "red", width = 2)
+  draw.text((55,65), str(consumption) + 'W', font = font, fill = 'Yellow')
   draw.text((50,75), str(electricitymeter_total) + 'kWh', font = font, fill = 'Yellow')
 
   #######sun
@@ -124,29 +128,28 @@ def stats(device):
   draw.text((10,50), str(inverter_now) + 'W', font = font, fill = 'white')
 
   #######powerline
-  draw.line([(128-15,10),(128-20,40)], fill = "gray", width = 2)
-  draw.line([(128-15,10),(128-10,40)], fill = "gray", width = 2)
-  draw.line([(128-25,20),(128-5,20)], fill = "gray", width = 2)
-  draw.line([(128-23,25),(128-7,25)], fill = "gray", width = 2)
-  draw.text((128-30,50), str(electricitymeter_now) + 'W', font = font, fill = 'white')
+  draw.line([(device.width-15,10),(device.width-20,40)], fill = "gray", width = 2)
+  draw.line([(device.width-15,10),(device.width-10,40)], fill = "gray", width = 2)
+  draw.line([(device.width-25,20),(device.width-5,20)], fill = "gray", width = 2)
+  draw.line([(device.width-23,25),(device.width-7,25)], fill = "gray", width = 2)
+  draw.text((device.width-30,50), str(electricitymeter_now) + 'W', font = font, fill = 'white')
   
   #######note
   if (electricitymeter_now > 0): draw.text((25,95), 'powered by net', font = font, fill = 'Yellow')
   if (electricitymeter_now < 0): draw.text((25,95), 'powered by sun', font = font, fill = 'Yellow')
   if (int(inverter_now) > 0):
-   rate = int(128 / (electricitymeter_now + inverter_now) * inverter_now) #welchen Anteil des Energiebedarfs ziehe ich aus der Sonne
-   if rate < 128*0.6: color = 'red'
-   elif rate < 128*0.8: color = 'orange'
+   rate = int(device.width / consumption * inverter_now) #welchen Anteil des Energiebedarfs ziehe ich aus der Sonne
+   if rate < device.width*0.6: color = 'red'
+   elif rate < device.width*0.8: color = 'orange'
    else: color = 'green'
    draw.line([(0,107),(rate,107)], fill = color, width = 4)
   
    draw.text((10,112), 'self used sunenergy', font = font, fill = 'Yellow')
-   rate = int(128 / inverter_now * (electricitymeter_now + inverter_now)) #Welchen Anteil der Sonnenergie verbrauche ich selbst
-   if rate < 128*0.6: color = 'red'
-   elif rate < 128*0.8: color = 'orange'
+   rate = int(device.width / inverter_now * consumption) #Welchen Anteil der Sonnenergie verbrauche ich selbst
+   if rate < device.width*0.6: color = 'red'
+   elif rate < device.width*0.8: color = 'orange'
    else: color = 'green'
    draw.line([(0,125),(rate,125)], fill = color, width = 4)
-
 
 def main():
  while True:
