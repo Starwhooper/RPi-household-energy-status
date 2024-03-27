@@ -1,6 +1,6 @@
 #!/usr/bin/python3
-# Creator: Thiemo Schuff
-# Source: https://github.com/Starwhooper/RPi-household-energy-status
+# Creator: Thiemo Schuff, thiemo@schuff.eu
+# Source: https://github.com/Starwhooper/RPi-status-via-luna
 
 #######################################################
 #
@@ -63,16 +63,17 @@ inverter_total =  0
 ##### do output
 def stats(device):
  global invertertime
+ try: invertertime
+ except: invertertime = datetime(1977, 1, 1)
  global inverter_total
- inverter_total = 0
+ try: inverter_total
+ except: inverter_total = 0
  global inverter_now
  global sunbeam
  try: sunbeam
  except: sunbeam = 0 
- try:
-  invertertime
- except:
-  invertertime = datetime(1977, 1, 1)
+
+
  
  with canvas(device, dither=True) as draw:
   #####get inverter    
@@ -80,12 +81,9 @@ def stats(device):
    try:
     inverter = requests.get(inverterurl, timeout=1)
     html_content = inverter.text
-    inverter_total = re.search(r'var\s+webdata_total_e\s*=\s*"([^"]+)"', inverter.text).group(1)
-    inverter_total = float(inverter_total)
-    inverter_total = round(inverter_total)
-    inverter_now = re.search(r'var\s+webdata_now_p\s*=\s*"([^"]+)"', inverter.text).group(1)
+    inverter_total = float(re.search(r'var\s+webdata_total_e\s*=\s*"([^"]+)"', inverter.text).group(1))
+    inverter_now = int(re.search(r'var\s+webdata_now_p\s*=\s*"([^"]+)"', inverter.text).group(1))
    except:
-
     inverter_now = 0
    invertertime = datetime.now()        
   
@@ -98,28 +96,28 @@ def stats(device):
       
   if electricitymeteronline == True:
       json_content = electricitymeter.json()
-      electricitymeter_total = json_content['StatusSNS']['Power']['Total_in']
-      electricitymeter_now = json_content['StatusSNS']['Power']['Power_curr']
+      electricitymeter_total = int(json_content['StatusSNS']['Power']['Total_in'])
+      electricitymeter_now = int(json_content['StatusSNS']['Power']['Power_curr'])
   else:
       electricitymeter_total = 0
       electricitymeter_now = 0
   
   #######house
-  draw.rectangle([(40,60),(128-40,128-20)], fill = "black", outline = "white", width = 2)
-  draw.line([(40,60),(128/2,20)], fill = "red", width = 2)
-  draw.line([(128-40,60),(128/2,20)], fill = "red", width = 2)
-  draw.text((55,80), str(int(electricitymeter_now) + int(inverter_now)) + 'W', font = font, fill = 'Yellow')
+  draw.rectangle([(40,45),(128-40,128-20-15)], fill = "black", outline = "white", width = 2)
+  draw.line([(40,45),(128/2,5)], fill = "red", width = 2)
+  draw.line([(128-40,45),(128/2,5)], fill = "red", width = 2)
+  draw.text((55,65), str(electricitymeter_now + inverter_now) + 'W', font = font, fill = 'Yellow')
+  draw.text((50,75), str(electricitymeter_total) + 'kWh', font = font, fill = 'Yellow')
 
   #######sun
   draw.ellipse([(-40,-40),(40,40)], fill = "yellow")
   if inverter_now >= 1:
-   sunbeam=sunbeam+4
-   print(sunbeam)
    draw.ellipse([(-40-sunbeam,-40-sunbeam),(40+sunbeam,40+sunbeam)], outline = "yellow")
-   if sunbeam >= 20: sunbeam = 0
+   sunbeam=sunbeam+4
+   if sunbeam >= 4*4: sunbeam = 0
   draw.text((1,1), 'total:', font = font, fill = 'black')
   if inverter_total == 0: draw.text((1,11), '????', font = font, fill = 'black')
-  else: draw.text((1,11), str(inverter_total), font = font, fill = 'black')
+  else: draw.text((1,11), str(round(inverter_total)), font = font, fill = 'black')
   draw.text((1,21), 'kWh', font = font, fill = 'black')
   left, top, right, bottom = draw.textbbox((10,50), str(inverter_now) + 'W', font=font)
   draw.rectangle((left-1, top-1, right+1, bottom+1), fill="black")
@@ -133,17 +131,22 @@ def stats(device):
   draw.text((128-30,50), str(electricitymeter_now) + 'W', font = font, fill = 'white')
   
   #######note
-  if (electricitymeter_now > 0): draw.text((25,110), 'powered by net', font = font, fill = 'Yellow')
-  if (electricitymeter_now < 0): draw.text((25,110), 'powered by sun', font = font, fill = 'Yellow')
+  if (electricitymeter_now > 0): draw.text((25,95), 'powered by net', font = font, fill = 'Yellow')
+  if (electricitymeter_now < 0): draw.text((25,95), 'powered by sun', font = font, fill = 'Yellow')
   if (int(inverter_now) > 0):
-   rate =  int(128 / (int(inverter_now)) * (int(electricitymeter_now) + int(inverter_now)))
-
-   color = 'green'
-   if rate < 80: color = 'orange'
-   if rate > 128: color = 'red'
-   draw.line([(0,125),(rate,125)], fill = color, width = 4)
- 
+   rate = int(128 / (electricitymeter_now + inverter_now) * inverter_now) #welchen Anteil des Energiebedarfs ziehe ich aus der Sonne
+   if rate < 128*0.6: color = 'red'
+   elif rate < 128*0.8: color = 'orange'
+   else: color = 'green'
+   draw.line([(0,107),(rate,107)], fill = color, width = 4)
   
+   draw.text((10,112), 'self used sunenergy', font = font, fill = 'Yellow')
+   rate = int(128 / inverter_now * (electricitymeter_now + inverter_now)) #Welchen Anteil der Sonnenergie verbrauche ich selbst
+   if rate < 128*0.6: color = 'red'
+   elif rate < 128*0.8: color = 'orange'
+   else: color = 'green'
+   draw.line([(0,125),(rate,125)], fill = color, width = 4)
+
 
 def main():
  while True:
