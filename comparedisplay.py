@@ -83,9 +83,10 @@ def stats(device):
     html_content = inverter.text
     inverter_total = float(re.search(r'var\s+webdata_total_e\s*=\s*"([^"]+)"', inverter.text).group(1))
     inverter_now = int(re.search(r'var\s+webdata_now_p\s*=\s*"([^"]+)"', inverter.text).group(1))
+    invertertime = datetime.now()
    except:
     inverter_now = 0
-   invertertime = datetime.now()        
+    invertertime = datetime.now() - timedelta(minutes=1) - timedelta(seconds=10)
   
   #####get electricitymeter
   try:
