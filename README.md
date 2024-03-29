@@ -5,6 +5,9 @@ Basically, I'm not interested in long-term storage of the data, but rather in or
 My Environtment: Landis Gyr+ E220 smartmeter with Tasmota script: https://gist.github.com/enra64/0f34a2f233068f901a75c320f3b87cd0
 
 ![status](display.jpg)
+![RPi Zero without case](display_wo_case.jpg)
+
+You may get the case here: https://www.printables.com/de/model/258922
 
 ## Installation
 install all needed packages to prepare the software environtent of your Raspberry Pi:
