@@ -97,10 +97,11 @@ def stats(device):
       
   if electricitymeteronline == True:
       json_content = electricitymeter.json()
-      electricitymeter_total = int(json_content['StatusSNS']['Power']['Total_in'])
+      electricitymeter_total_in = int(json_content['StatusSNS']['Power']['Total_in'])
+      electricitymeter_total_out = int(json_content['StatusSNS']['Power']['Total_out'])
       electricitymeter_now = int(json_content['StatusSNS']['Power']['Power_curr'])
   else:
-      electricitymeter_total = 0
+      electricitymeter_total_in = 0
       electricitymeter_now = 0
 
   #####calculated values:
@@ -112,7 +113,7 @@ def stats(device):
   draw.line([(40,45),(device.width/2,5)], fill = "red", width = 2)
   draw.line([(device.width-40,45),(device.width/2,5)], fill = "red", width = 2)
   draw.text((55,65), str(consumption) + 'W', font = font, fill = 'Yellow')
-  draw.text((50,75), str(electricitymeter_total) + 'kWh', font = font, fill = 'Yellow')
+  draw.text((50,75), str(electricitymeter_total_in) + 'kWh', font = font, fill = 'Yellow')
 
   #######sun
   draw.ellipse([(-40,-40),(40,40)], fill = "yellow")
@@ -134,6 +135,7 @@ def stats(device):
   draw.line([(device.width-25,20),(device.width-5,20)], fill = "gray", width = 2)
   draw.line([(device.width-23,25),(device.width-7,25)], fill = "gray", width = 2)
   draw.text((device.width-30,50), str(electricitymeter_now) + 'W', font = font, fill = 'white')
+  draw.text((device.width-30,70), str(electricitymeter_total_out) + 'kWh', font = font, fill = 'white')
   
   #######note
   if (electricitymeter_now > 0): draw.text((25,95), 'powered by net', font = font, fill = 'Yellow')
