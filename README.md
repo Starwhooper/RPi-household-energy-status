@@ -1,7 +1,8 @@
 # RPi-household-energy-status #
 
 I was looking for a way to measure the current energy consumption of my household and compare it with the photovoltaic system.
-Basically, I'm not interested in long-term storage of the data, but rather in order to be able to spontaneously determine whether I'm currently purchasing energy from the grid or am already giving energy away to the grid operator
+Basically, I'm not interested in long-term storage of the data, but rather in order to be able to spontaneously determine whether I'm currently purchasing energy from the grid or am already giving energy away to the grid operator.
+My Environtment: Landis Gyr+ E220 smartmeter with Tasmota script: https://gist.github.com/enra64/0f34a2f233068f901a75c320f3b87cd0
 
 ![status](IMG20240326144308.jpg)
 
