@@ -1,6 +1,6 @@
 #!/usr/bin/python3
-# Creator: Thiemo Schuff, thiemo@schuff.eu
-# Source: https://github.com/Starwhooper/RPi-status-via-luna
+# Creator: Thiemo Schuff
+# Source: https://github.com/Starwhooper/RPi-household-energy-status
 
 #######################################################
 #
@@ -102,6 +102,7 @@ def stats(device):
       electricitymeter_now = int(json_content['StatusSNS']['Power']['Power_curr'])
   else:
       electricitymeter_total_in = 0
+      electricitymeter_total_out = 0
       electricitymeter_now = 0
 
   #####calculated values:
@@ -109,11 +110,11 @@ def stats(device):
 
   
   #######house
-  draw.rectangle([(40,45),(device.width-40,device.width-20-15)], fill = "black", outline = "white", width = 2)
-  draw.line([(40,45),(device.width/2,5)], fill = "red", width = 2)
-  draw.line([(device.width-40,45),(device.width/2,5)], fill = "red", width = 2)
-  draw.text((55,65), str(consumption) + 'W', font = font, fill = 'Yellow')
-  draw.text((50,75), str(electricitymeter_total_in) + 'kWh', font = font, fill = 'Yellow')
+  draw.rectangle([(40,50),(device.width-40,device.width-20-15)], fill = "black", outline = "white", width = 3)
+  draw.line([(40-3,50+3),(device.width/2,26)], fill = "red", width = 6) #left roof
+  draw.line([(device.width-40+3,50+3),(device.width/2,26)], fill = "red", width = 6) #right roof
+  draw.text((45,65), str(consumption) + 'W', font = font, fill = 'Yellow')
+  draw.text((45,75), str(electricitymeter_total_in) + 'kWh', font = font, fill = 'Yellow')
 
   #######sun
   draw.ellipse([(-40,-40),(40,40)], fill = "yellow")
@@ -135,7 +136,7 @@ def stats(device):
   draw.line([(device.width-25,20),(device.width-5,20)], fill = "gray", width = 2)
   draw.line([(device.width-23,25),(device.width-7,25)], fill = "gray", width = 2)
   draw.text((device.width-30,50), str(electricitymeter_now) + 'W', font = font, fill = 'white')
-  draw.text((device.width-30,70), str(electricitymeter_total_out) + 'kWh', font = font, fill = 'white')
+  draw.text((device.width-60,5), str(electricitymeter_total_out) + 'kWh', font = font, fill = 'white')
   
   #######note
   if (electricitymeter_now > 0): draw.text((25,95), 'powered by net', font = font, fill = 'Yellow')
