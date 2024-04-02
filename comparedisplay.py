@@ -2,6 +2,7 @@
 # Creator: Thiemo Schuff
 # Source: https://github.com/Starwhooper/RPi-household-energy-status
 
+
 #######################################################
 #
 # Prepare
@@ -25,15 +26,6 @@ try:
 except:
  sys.exit("\033[91m {}\033[00m" .format('any needed package is not aviable. Please check README.md to check which components shopuld be installed via pip3".'))
 
-##### ensure that only one instance is running at the same time
-runninginstances = 0
-for p in psutil.process_iter():
- if len(p.cmdline()) == 2:
-  if p.cmdline()[0] == '/usr/bin/python3':
-   if p.cmdline()[1] == os.path.abspath(__file__):
-    runninginstances += 1
-if runninginstances >= 2:
- sys.exit("\033[91m {}\033[00m" .format('exit: is already running'))
  
 ##### import config.json
 try:
@@ -156,6 +148,14 @@ def stats(device):
    draw.line([(0,125),(rate,125)], fill = color, width = 4)
 
 def main():
+ ##### ensure that only one instance is running at the same time
+ runninginstances = 0
+ for p in psutil.process_iter():
+  if re.search(os.path.abspath(__file__), str(p.cmdline())):
+   runninginstances = runninginstances + 1
+ if runninginstances >= 2:
+  sys.exit("\033[91m {}\033[00m" .format('exit: is already running'))
+ 
  while True:
   stats(device)
   time.sleep(cf['imagerefresh'])
