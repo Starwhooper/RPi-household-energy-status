@@ -14,9 +14,9 @@ import sys
 try:
  from luma.core.render import canvas
  from PIL import ImageFont
-# from PIL import Image, ImageDraw
  from urllib.parse import quote
  import json
+ import logging
  import os
  import psutil
  import requests
@@ -24,9 +24,11 @@ try:
  import time
  from datetime import datetime, timedelta  
 except:
- sys.exit("\033[91m {}\033[00m" .format('any needed package is not aviable. Please check README.md to check which components shopuld be installed via pip3".'))
+ sys.exit("\033[91m {}\033[00m" .format('any needed package is not aviable. Please check README.md to check which components should be installed via pip3".'))
 
- 
+##### configure logging
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+
 ##### import config.json
 try:
  with open(os.path.split(os.path.abspath(__file__))[0] + '/config.json','r') as file:
@@ -79,13 +81,15 @@ def stats(device):
    except:
     inverter_now = 0
     invertertime = datetime.now() - timedelta(minutes=1) - timedelta(seconds=10)
+    logging.warning(inverterurl + ' could not read')
   
   #####get electricitymeter
   try:
-      electricitymeter = requests.get(electricitymeterurl)
+      electricitymeter = requests.get(electricitymeterurl, timeout=1)
       electricitymeteronline = True
   except:
       electricitymeteronline = False
+      logging.warning(electricitymeterurl + ' could not read')
       
   if electricitymeteronline == True:
       json_content = electricitymeter.json()
@@ -96,6 +100,7 @@ def stats(device):
       electricitymeter_total_in = 0
       electricitymeter_total_out = 0
       electricitymeter_now = 0
+      logging.info('all electricitymeter information set to 0')
 
   #####calculated values:
   consumption = electricitymeter_now + inverter_now
@@ -134,7 +139,10 @@ def stats(device):
   if (electricitymeter_now > 0): draw.text((25,95), 'powered by net', font = font, fill = 'Yellow')
   if (electricitymeter_now < 0): draw.text((25,95), 'powered by sun', font = font, fill = 'Yellow')
   if (int(inverter_now) > 0):
-   rate = int(device.width / consumption * inverter_now) #welchen Anteil des Energiebedarfs ziehe ich aus der Sonne
+   try:
+    rate = int(device.width / consumption * inverter_now) #welchen Anteil des Energiebedarfs ziehe ich aus der Sonne
+   except:
+    rate = 0
    if rate < device.width*0.6: color = 'red'
    elif rate < device.width*0.8: color = 'orange'
    else: color = 'green'
