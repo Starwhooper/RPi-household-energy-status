@@ -166,8 +166,7 @@ def stats(device):
    elif rate < device.width*0.8: color = 'orange'
    else: color = 'green'
    draw.line([(0,107),(rate,107)], fill = color, width = 4)
-  
-   draw.text((0,112), 'currently sunenergy using', font = font, fill = 'Yellow')
+   draw.text((0,112), 'cur. PV energy cons.', font = font, fill = 'Yellow')
    rate = int(device.width / inverter_now * consumption) #Welchen Anteil der Sonnenergie verbrauche ich selbst
    if rate < device.width*0.6: color = 'red'
    elif rate < device.width*0.8: color = 'orange'
