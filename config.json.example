@@ -1,26 +1,25 @@
 {
-	"luma": {
-    "demo_opts.py": {
-      "folder": "/opt/luma.examples/examples"
-    }
-  },
-  "imagerefresh": 3,
-  "inverter": {
-		"address": "192.168.179.2",
-		"site": "status.html",
-		"user": "",
-		"pw": ""
-	},
-	"electricitymeter": {
-		"address": "192.168.179.37",
-		"site": "cm?cmnd=STATUS+0"
-	},
-	  "font": {
-    "color": "WHITE",
-    "ttf": false,
-    "ttffile": "/opt/luma.examples/examples/fonts/tiny.ttf",
-    "ttfsize": 6
-	  }
-
+ "luma": {
+  "demo_opts.py": {
+   "folder": "/opt/luma.examples/examples"
+  }
+ },
+ "imagerefresh": 3,
+ "inverter": {
+  "address": "192.168.179.2",
+  "site": "status.html",
+  "user": "",
+  "pw": "",
+  "offset": -100
+ },
+ "electricitymeter": {
+  "address": "192.168.179.37",
+  "site": "cm?cmnd=STATUS+0"
+ },
+ "font": {
+  "color": "WHITE",
+  "ttf": false,
+  "ttffile": "/opt/luma.examples/examples/fonts/tiny.ttf",
+  "ttfsize": 6
+ }
 }
-
