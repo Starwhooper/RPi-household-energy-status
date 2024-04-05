@@ -2,7 +2,6 @@
 # Creator: Thiemo Schuff
 # Source: https://github.com/Starwhooper/RPi-household-energy-status
 
-
 #######################################################
 #
 # Prepare
@@ -62,10 +61,16 @@ def stats(device):
  global inverter_total
  try: inverter_total
  except: inverter_total = 0
+ global inverter_adj
+ try: inverter_adj
+ except: inverter_adj = 0
  global inverter_now
  global sunbeam
  try: sunbeam
  except: sunbeam = 0 
+ global sunkwh
+ try: sunkwh
+ except: sunkwh = 'adj'
 
 
  
@@ -82,6 +87,13 @@ def stats(device):
     inverter_now = 0
     invertertime = datetime.now() - timedelta(minutes=1) - timedelta(seconds=10)
     logging.warning(inverterurl + ' could not read')
+
+   if inverter_total >= 1:
+    inverter_adj = inverter_total + cf['inverter']['offset']
+   else:
+    inverter_adj = inverter_total
+    logging.warning('inverter total count not found')
+    
   
   #####get electricitymeter
   try:
@@ -121,7 +133,14 @@ def stats(device):
    if sunbeam >= 4*4: sunbeam = 0
   draw.text((1,1), 'total:', font = font, fill = 'black')
   if inverter_total == 0: draw.text((1,11), '????', font = font, fill = 'black')
-  else: draw.text((1,11), str(round(inverter_total)), font = font, fill = 'black')
+  else: 
+   if sunkwh == 'tot':
+    draw.text((1,11), str(round(inverter_adj)), font = font, fill = 'black')
+    sunkwh = 'adj'
+   else: 
+    draw.text((1,11), '(' + str(round(inverter_total)) + ')', font = font, fill = 'black')
+    sunkwh = 'tot'
+   
   draw.text((1,21), 'kWh', font = font, fill = 'black')
   left, top, right, bottom = draw.textbbox((10,50), str(inverter_now) + 'W', font=font)
   draw.rectangle((left-1, top-1, right+1, bottom+1), fill="black")
