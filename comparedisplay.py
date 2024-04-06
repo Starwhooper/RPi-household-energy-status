@@ -157,9 +157,12 @@ def stats(device):
   #######note
   if (electricitymeter_now > 0): draw.text((25,95), 'powered by net', font = font, fill = 'Yellow')
   if (electricitymeter_now < 0): draw.text((25,95), 'powered by sun', font = font, fill = 'Yellow')
+
+  
   if (int(inverter_now) > 0):
+  #########compare current consumption and current provided over inverter to know how much of current consumption cames from sun
    try:
-    rate = int(device.width / consumption * inverter_now) #welchen Anteil des Energiebedarfs ziehe ich aus der Sonne
+    rate = int(device.width / consumption * inverter_now)
    except:
     rate = 0
     logging.warning('division zero: consumption = ' + str(consumption))
@@ -169,8 +172,10 @@ def stats(device):
    else: color = 'green'
    draw.line([(0,107),(rate,107)], fill = color, width = 4)
    draw.text((0,112), 'cur. PV energy cons.', font = font, fill = 'Yellow')
+
+  #########compare current provided over inverter and current consumption to know how much of current solar power are used from my household
    try:
-    rate = int(device.width / inverter_now * consumption) #Welchen Anteil der Sonnenergie verbrauche ich selbst
+    rate = int(device.width / inverter_now * consumption)
    except:
     rate = 0
     logging.warning('division zero: inverter_now = ' + str(inverter_now))
@@ -178,11 +183,11 @@ def stats(device):
    elif rate < device.width*0.8: color = 'orange'
    else: color = 'green'
    
-#   draw.line([(0,124),(rate,124)], fill = color, width = 4)
    draw.rectangle((0,121,rate,124), fill = color)
 
+  #########compare complete provided from interver exclude the adjustemt with the complete provided over electricitymeter out to net to know how much of collected sun energy i give away for free to net
    try:
-    rate = int(device.width / (inverter_adj * electricitymeter_total_out)) #Welchen Anteil der Sonnenergie verbrauche ich selbst
+    rate = int(device.width / (inverter_adj * electricitymeter_total_out))
    except:
     rate = 0
     logging.warning('division zero: inverter_adj = ' + str(inverter_adj))
@@ -190,9 +195,8 @@ def stats(device):
    elif rate < device.width*0.8: color = 'orange'
    else: color = 'green'
    draw.rectangle((0,125,rate,127), fill = color)
-
-
-
+   draw.text((0,device.height-10), str(round(inverter_adj)), font = font, fill = 'white')
+   draw.text((device.width-10,device.height-10), str(round(electricitymeter_total_out)), font = font, fill = 'white')
 
 def main():
  ##### ensure that only one instance is running at the same time
