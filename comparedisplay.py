@@ -162,16 +162,37 @@ def stats(device):
     rate = int(device.width / consumption * inverter_now) #welchen Anteil des Energiebedarfs ziehe ich aus der Sonne
    except:
     rate = 0
+    logging.warning('division zero: consumption = ' + str(consumption))
+
    if rate < device.width*0.6: color = 'red'
    elif rate < device.width*0.8: color = 'orange'
    else: color = 'green'
    draw.line([(0,107),(rate,107)], fill = color, width = 4)
    draw.text((0,112), 'cur. PV energy cons.', font = font, fill = 'Yellow')
-   rate = int(device.width / inverter_now * consumption) #Welchen Anteil der Sonnenergie verbrauche ich selbst
+   try:
+    rate = int(device.width / inverter_now * consumption) #Welchen Anteil der Sonnenergie verbrauche ich selbst
+   except:
+    rate = 0
+    logging.warning('division zero: inverter_now = ' + str(inverter_now))
    if rate < device.width*0.6: color = 'red'
    elif rate < device.width*0.8: color = 'orange'
    else: color = 'green'
-   draw.line([(0,125),(rate,125)], fill = color, width = 4)
+   
+#   draw.line([(0,124),(rate,124)], fill = color, width = 4)
+   draw.rectangle((0,121,rate,124), fill = color)
+
+   try:
+    rate = int(device.width / (inverter_adj * electricitymeter_total_out)) #Welchen Anteil der Sonnenergie verbrauche ich selbst
+   except:
+    rate = 0
+    logging.warning('division zero: inverter_adj = ' + str(inverter_adj))
+   if rate < device.width*0.6: color = 'red'
+   elif rate < device.width*0.8: color = 'orange'
+   else: color = 'green'
+   draw.rectangle((0,125,rate,127), fill = color)
+
+
+
 
 def main():
  ##### ensure that only one instance is running at the same time
