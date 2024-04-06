@@ -12,16 +12,16 @@ You may get the case here: https://www.printables.com/de/model/258922
 ## Installation
 install all needed packages to prepare the software environtent of your Raspberry Pi:
 
-### enable SPI
+### enable SPI interface
 ```bash
 sudo raspi-config
 ```
 
 ### install required components
-choose luma.lcd (SPI)
 ```bash
 sudo apt install python3-luma.lcd python3-psutil git -y
 sudo git clone https://github.com/rm-hull/luma.examples /opt/luma.examples
+sudo wget https://raw.githubusercontent.com/Starwhooper/luma.examples/patch-1/conf/st7735_128x128_WShat.conf -O /opt/luma.examples/conf/st7735_128x128_WShat.conf
 ```
 
 ### install this tool itself:
@@ -41,7 +41,7 @@ sudo nano /opt/RPi-household-energy-status/config.json
 ### add to autostart ###
 add it to rc.local to autostart as boot
 ```bash
-sudo sed -i -e '$i \/opt/RPi-household-energy-status/comparedisplay.py --rotate 2 --display=st7735 --interface=spi --spi-bus-speed=16000000 --gpio-reset=27 --gpio-data-command=25 --gpio-backlight=24 --width=128 --height=128 --bgr --h-offset=1 --v-offset=2 --backlight-active=high &\n' /etc/rc.local
+sudo sed -i -e '$i \/opt/RPi-household-energy-status/comparedisplay.py --rotate 2 --config /opt/luma.examples/conf/st7735_128x128_WShat.conf &\n' /etc/rc.local
 ```
 
 ## Update
