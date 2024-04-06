@@ -185,14 +185,14 @@ def stats(device):
    
    draw.rectangle((0,121,rate,124), fill = color)
 
-  #########compare complete provided from interver exclude the adjustemt with the complete provided over electricitymeter out to net to know how much of collected sun energy i give away for free to net
+  #########compare complete provided from interver exclude the adjustemt with the complete provided over electricitymeter out to net to know how much of collected sun energy i use myself
    try:
-    rate = int(device.width / (inverter_adj * electricitymeter_total_out))
+    rate = int(device.width - (device.width / inverter_adj * electricitymeter_total_out))
    except:
     rate = 0
     logging.warning('division zero: inverter_adj = ' + str(inverter_adj))
-   if rate < device.width*0.6: color = 'red'
-   elif rate < device.width*0.8: color = 'orange'
+   if rate < device.width*0.3: color = 'red'
+   elif rate < device.width*0.6: color = 'orange'
    else: color = 'green'
    draw.rectangle((0,125,rate,127), fill = color)
    draw.text((0,device.height-10), str(round(inverter_adj)), font = font, fill = 'white')
