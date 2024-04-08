@@ -5,6 +5,12 @@
   }
  },
  "imagerefresh": 3,
+ "imagestyle": "detail",
+  "imageexport": {
+   "active": true,
+   "path": "os.environ['HOME'] + '/poweroutput.gif'",
+   "intervall": 60
+  },
  "inverter": {
   "address": "192.168.179.2",
   "site": "status.html",
