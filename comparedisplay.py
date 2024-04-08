@@ -8,6 +8,15 @@
 #
 #######################################################
 
+
+#Logging Levels https://rollbar.com/blog/logging-in-python/#
+#    DEBUG - Detailed information, typically of interest when diagnosing problems.
+#    INFO - Confirmation of things working as expected.
+#    WARNING - Indication of something unexpected or a problem in the near future e.g. 'disk space low'.
+#    ERROR - A more serious problem due to which the program was unable to perform a function.
+#    CRITICAL - A serious error, indicating that the program itself may not be able to continue executing.
+
+
 ##### check if all required packages are aviable
 import sys
 try:
@@ -25,7 +34,6 @@ try:
 except:
  sys.exit("\033[91m {}\033[00m" .format('any needed package is not aviable. Please check README.md to check which components should be installed via pip3".'))
 
-##### configure logging
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 ##### import config.json
@@ -33,25 +41,16 @@ try:
  with open(os.path.split(os.path.abspath(__file__))[0] + '/config.json','r') as file:
   cf = json.loads(file.read())
 except:
+ logging.critical('The configuration file ' + os.path.split(os.path.abspath(__file__))[0] + '/config.json does not exist or has incorrect content. Please rename the file config.json.example to config.json and change the content as required ')
  sys.exit("\033[91m {}\033[00m" .format('exit: The configuration file ' + os.path.split(os.path.abspath(__file__))[0] + '/config.json does not exist or has incorrect content. Please rename the file config.json.example to config.json and change the content as required '))
-
+ 
 ##### import module demo_opts
 try:
  sys.path.append(cf['luma']['demo_opts.py']['folder'])
  from demo_opts import get_device
 except:
+ logging.critical('file ' + cf['luma']['demo_opts.py']['folder'] + '/demo_opts.py not found. Please check config.json or do sudo git clone https://github.com/rm-hull/luma.examples /opt/luma.examples')
  sys.exit("\033[91m {}\033[00m" .format('file ' + cf['luma']['demo_opts.py']['folder'] + '/demo_opts.py not found. Please check config.json or do sudo git clone https://github.com/rm-hull/luma.examples /opt/luma.examples'))
-
-###### set defaults
-if cf['font']['ttf'] == True:
- font = ImageFont.truetype(cf['font']['ttffile'], cf['font']['ttfsize'])
-else:
- font = ImageFont.load_default()
-
-inverterurl = 'http://' + cf['inverter']['user'] + ':' + quote(cf['inverter']['pw']) + '@' + cf['inverter']['address'] + '/' + cf['inverter']['site']
-electricitymeterurl = 'http://' + cf['electricitymeter']['address'] + '/' + cf['electricitymeter']['site']
-
-inverter_total =  0
 
 ##### do output
 def stats(device):
@@ -71,10 +70,10 @@ def stats(device):
  global sunkwh
  try: sunkwh
  except: sunkwh = 'adj'
-
-
  
+ #print(invertertime)
  with canvas(device, dither=True) as draw:
+
   #####get inverter    
   if (invertertime <= datetime.now() - timedelta(minutes=1)):
    try:
@@ -198,22 +197,50 @@ def stats(device):
    draw.text((0,device.height-10), str(round(inverter_adj)), font = font, fill = 'white')
    draw.text((device.width-10,device.height-10), str(round(electricitymeter_total_out)), font = font, fill = 'white')
 
-def main():
- ##### ensure that only one instance is running at the same time
+def inverterurl():
+ return('http://' + cf['inverter']['user'] + ':' + quote(cf['inverter']['pw']) + '@' + cf['inverter']['address'] + '/' + cf['inverter']['site'])
+
+def electricitymeterurl():
+ return('http://' + cf['electricitymeter']['address'] + '/' + cf['electricitymeter']['site'])
+
+def prepare():
+ ## font
+ if cf['font']['ttf'] == True:
+  try:
+   font = ImageFont.truetype(cf['font']['ttffile'], cf['font']['ttfsize'])
+  except:
+   font = ImageFont.load_default()
+   logging.error('font ' + cf['font']['ttffile'] + ' could not used. Use instead default font')
+ else:
+  font = ImageFont.load_default()
+ globals()['font'] = font
+
+ ##device urls 
+ globals()['electricitymeterurl'] = str(electricitymeterurl())
+ globals()['inverterurl'] = str(inverterurl())
+ 
+
+def doublecheck():
  runninginstances = 0
  for p in psutil.process_iter():
   if re.search(os.path.abspath(__file__), str(p.cmdline())):
    runninginstances = runninginstances + 1
  if runninginstances >= 2:
+  logging.warning('is already running')
   sys.exit("\033[91m {}\033[00m" .format('exit: is already running'))
- 
+ logging.debug('check no multiply starts')
+
+def main():
+ doublecheck() #ensure that only one instance is running at the same time
+ prepare()
+ device = get_device()
  while True:
   stats(device)
   time.sleep(cf['imagerefresh'])
 
 if __name__ == '__main__':
  try:
-  device = get_device()
+  logging.debug('pass name')
   main()
  except KeyboardInterrupt:
-  pass
+  logging.info('interrupt via ctrl+c')
