@@ -8,7 +8,7 @@
  "imagestyle": "detail",
   "imageexport": {
    "active": true,
-   "path": "os.environ['HOME'] + '/poweroutput.gif'",
+   "path":"/dev/shm/householdenergy.gif",
    "intervall": 60
   },
  "inverter": {
