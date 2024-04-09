@@ -6,7 +6,8 @@ My Environtment: Landis Gyr+ E220 smartmeter with Tasmota script: https://gist.g
 
 ![status](display.jpg)
 ![RPi Zero without case](display_wo_case.jpg)
-![Screen](poweroutput.gif)
+![Screen pretty](householdenergy.gif)
+![Screen detail](householdenergy.gif)
 
 You may get the case here: https://www.printables.com/de/model/258922
 
