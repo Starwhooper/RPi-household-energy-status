@@ -37,7 +37,8 @@ try:
 except:
  sys.exit("\033[91m {}\033[00m" .format('any needed package is not aviable. Please check README.md to check which components should be installed via pip3".'))
 
-logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("urllib3")
+logging.basicConfig(filename='/var/log/householdenergy.log', level=logging.DEBUG, encoding='utf-8', format='%(asctime)s:%(levelname)s:%(message)s')
 
 ##### import config.json
 try:
@@ -57,7 +58,7 @@ except:
 
 KEY_PRESS_PIN  = 13
 GPIO.setmode(GPIO.BCM) 
-GPIO.cleanup()
+#GPIO.cleanup()
 GPIO.setup(KEY_PRESS_PIN,   GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
 
 def inverterurl():
@@ -89,7 +90,11 @@ def doublecheck():
  runninginstances = 0
  for p in psutil.process_iter():
   if re.search(os.path.abspath(__file__), str(p.cmdline())):
-   runninginstances = runninginstances + 1
+   if re.search("name='sudo'", str(p)):
+    pass
+   else:
+    logging.warning('double start ' + str(runninginstances) + ': ' + str(p))
+    runninginstances = runninginstances + 1
  if runninginstances >= 2:
   logging.warning('is already running')
   sys.exit("\033[91m {}\033[00m" .format('exit: is already running'))
@@ -169,8 +174,10 @@ def calculate():
   logging.warning('electricitymeter could not found')
   electricitymeteronline = False
   logging.warning(electricitymeterurl + ' could not read')
-  electricitymeter_total_in = electricitymeter_total_in
-  electricitymeter_total_out = electricitymeter_total_out
+  try: electricitymeter_total_in = electricitymeter_total_in
+  except: electricitymeter_total_in = 0
+  try: electricitymeter_total_out = electricitymeter_total_out
+  except: electricitymeter_total_out = 0
   logging.info('all electricitymeter information set to 0')
  
  global powersource
@@ -358,11 +365,16 @@ def output(device):
  except: lastimageexport = datetime(1977, 1, 1)
  if lastimageexport <= datetime.now() - timedelta(seconds=cf['imageexport']['intervall']):
   if cf['imageexport']['active'] == True:
-   outputimage.save(eval(cf['imageexport']['path']))
-   lastimageexport = datetime.now()
-   logging.info('saved current displaycontent to: ' + eval(cf['imageexport']['path']))
+   exportpathfile = cf['imageexport']['path']
+   try:
+    outputimage.save(exportpathfile)
+    logging.info('saved current displaycontent to: ' + exportpathfile)
+    lastimageexport = datetime.now()
+   except:
+    logging.info(exportpathfile + 'could not saved')
  device.display(outputimage)
-
+ logging.debug('show an display')
+ 
 #######################################################
 #
 # start
@@ -370,7 +382,7 @@ def output(device):
 #######################################################
  
 def main():
- doublecheck() #ensure that only one instance is running at the same time
+# doublecheck() #ensure that only one instance is running at the same time
  prepare()
  device = get_device()
  while True:
