@@ -5,7 +5,7 @@
   }
  },
  "imagerefresh": 3,
- "imagestyle": "preety",
+ "imagestyle": "pretty",
   "imageexport": {
    "active": true,
    "path":"/dev/shm/householdenergy.gif",
