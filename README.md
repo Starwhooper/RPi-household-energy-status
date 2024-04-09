@@ -40,9 +40,13 @@ sudo nano /opt/RPi-household-energy-status/config.json
 * add ip adress from solar inverter an tasmota smartmeter
 
 ### add to autostart ###
-add it to rc.local to autostart as boot
+add it to cronjob reboot
 ```bash
-sudo sed -i -e '$i \/opt/RPi-household-energy-status/comparedisplay.py --rotate 2 --config /opt/luma.examples/conf/st7735_128x128_WShat.conf &\n' /etc/rc.local
+sudo crontab -e
+```
+insert line:
+```
+@reboot /opt/RPi-household-energy-status/comparedisplay.py --rotate 2 --config /opt/luma.examples/conf/st7735_128x128_WShat.conf
 ```
 
 ## Update
