@@ -114,7 +114,7 @@ def readinverter():
   total = float(re.search(r'var\s+webdata_total_e\s*=\s*"([^"]+)"', inverter.text).group(1))
   now = int(re.search(r'var\s+webdata_now_p\s*=\s*"([^"]+)"', inverter.text).group(1))
  except:
-  logging.warning('inverter could not read')
+  logging.warning('inverter could not read from: ' + inverterurl)
   total = -1
   now = 0
  return(total,now)
