@@ -302,6 +302,9 @@ def calculate():
   except: electricitymeter_total_out = 0
   logging.info('all electricitymeter information set to 0')
  
+ global electricitymeter_agg_per_day
+ electricitymeter_agg_per_day = round(electricitymeter_total_in / (( datetime.utcnow().timestamp() - cf['electricitymeter']['since']) / 60 / 60 / 24),1)
+ 
  global powersource
  if e_now <= 0: powersource = 'sun'
  else: powersource = 'net'
@@ -332,6 +335,7 @@ def calculate():
  global ratesolarpowerforhousehold
  try:
   ratesolarpowerforhousehold = int(100 / inverter_now * consumption)
+  if ratesolarpowerforhousehold > 100: ratesolarpowerforhousehold = 100
  except:
   ratesolarpowerforhousehold = 0
 
@@ -394,34 +398,36 @@ def createimage(imagewidth,imageheight):
   y += 10
   draw.text((0,y), 'net total out:  ' + str(electricitymeter_total_out) + 'kWh', font = detailfont, fill = 'white')
   y += 10
+  draw.text((0,y), 'net avg per day:' + str(electricitymeter_agg_per_day) + 'kWh', font = detailfont, fill = 'white')
+  y += 10
   draw.text((0,y), 'inverter now:   ' + str(inverter_now) + 'W', font = detailfont, fill = 'white')
   y += 10
-  draw.text((0,y), 'inverter total: ' + str(round(inverter_total)) + 'kWh', font = detailfont, fill = 'white')
-  y += 10
+#  draw.text((0,y), 'inverter total: ' + str(round(inverter_total)) + 'kWh', font = detailfont, fill = 'white')
+#  y += 10
   draw.text((0,y), 'inverter adj:   ' + str(round(inverter_adj)) + 'kWh', font = detailfont, fill = 'white')
   y += 10
   #########compare current consumption and current provided over inverter to know how much of current consumption cames from sun
-  draw.text((0,y), 'cur. req. prov. by sun', font = detailfont, fill = 'white')
+  draw.text((0,y), 'cur.req.prov. by sun (' + str(rateconsumptionfromsun) + ')', font = detailfont, fill = 'white')
   y += 12
   try: 
    draw.rectangle(((0,y,int(imagewidth / 100 * rateconsumptionfromsun),y+4)), fill = colorbar(rateconsumptionfromsun), width = 1)
-   draw.text((60,y),str(rateconsumptionfromsun) + '%', font = detailfont, fill = 'white')
+   #draw.text((60,y),str(rateconsumptionfromsun) + '%', font = detailfont, fill = 'white')
   except: pass
   y += 3
   #########compare current provided over inverter and current consumption to know how much of current solar power are used from my household
-  draw.text((0,y), 'cur. use of PV energy', font = detailfont, fill = 'white')  
+  draw.text((0,y), 'cur.use of PV energy (' + str(ratesolarpowerforhousehold) + ')', font = detailfont, fill = 'white')  
   y += 12
   try:
    draw.rectangle((0,y,int(imagewidth / 100 * ratesolarpowerforhousehold),y+4), fill = colorbar(ratesolarpowerforhousehold), width = 1)
-   draw.text((60,y),str(ratesolarpowerforhousehold) + '%', font = detailfont, fill = 'white')
+   #draw.text((60,y),str(ratesolarpowerforhousehold) + '%', font = detailfont, fill = 'white')
   
   except: pass
   y += 3
   #########compare complete provided from interver exclude the adjustemt with the complete provided over electricitymeter out to net to know how much of collected sun energy i use myself
-  draw.text((0,y), str(round(inverter_adj - electricitymeter_total_out)) + 'kWh in vs. ' + str(round(electricitymeter_total_out)) + 'kWh out', font = detailfont, fill = 'white')
+  draw.text((0,y), str(round(inverter_adj - electricitymeter_total_out)) + 'kWh in / ' + str(round(electricitymeter_total_out)) + 'kWh out (' + str(rateinverteradjvselectricimetertotalout) + ')', font = detailfont, fill = 'white')
   y += 12
   draw.rectangle((0,y,int(imagewidth / 100 * rateinverteradjvselectricimetertotalout),y+4), fill = colorbar(rateinverteradjvselectricimetertotalout), width = 1)
-  draw.text((60,y),str(rateinverteradjvselectricimetertotalout) + '%', font = detailfont, fill = 'white')
+  #draw.text((60,y),str(rateinverteradjvselectricimetertotalout) + '%', font = detailfont, fill = 'white')
   
  if imagestyle == 'pretty':
   #######house
