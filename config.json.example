@@ -22,6 +22,24 @@
   "address": "192.168.179.37",
   "site": "cm?cmnd=STATUS+0"
  },
+ "plugs":{
+  "1":{
+   "address":"tasmota-123456-xxxx",
+   "site":"cm?cmnd=STATUS+0"
+  },
+  "2":{
+   "address":"",
+   "site":"cm?cmnd=STATUS+0"
+  },
+  "3":{
+   "address":"",
+   "site":"cm?cmnd=STATUS+0"
+  },
+  "4":{
+   "address":"",
+   "site":"cm?cmnd=STATUS+0"
+  }
+ },
  "font": {
   "color": "WHITE",
   "ttf": false,
