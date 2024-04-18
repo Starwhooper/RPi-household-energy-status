@@ -40,6 +40,11 @@
    "site":"cm?cmnd=STATUS+0"
   }
  },
+ "pushover":{
+	 "messages":true,
+	 "apikey":"",
+  "userkey":""
+ },
  "font": {
   "color": "WHITE",
   "ttf": false,
