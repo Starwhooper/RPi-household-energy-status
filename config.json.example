@@ -20,7 +20,8 @@
  },
  "electricitymeter": {
   "address": "192.168.179.37",
-  "site": "cm?cmnd=STATUS+0"
+  "site": "cm?cmnd=STATUS+0",
+  "since": ""
  },
  "plugs":{
   "1":{
