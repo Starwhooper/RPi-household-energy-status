@@ -39,7 +39,8 @@ except:
 
 logging.getLogger("urllib3")
 logging.basicConfig(
-# filename='/var/log/householdenergy.log', 
+ filename='/var/log/householdenergy.log', 
+# level=logging.DEBUG, encoding='utf-8', 
  level=logging.WARNING, encoding='utf-8', 
  format='%(asctime)s:%(levelname)s:%(message)s'
 )
@@ -131,6 +132,7 @@ def pomessage(message,priority,attachment):
       "html": 1,
       "priority": priority,
       "message": "Status of househould energy:" + message ,
+      "title": "Househould energy",
      }
      ,
      files = {
@@ -145,6 +147,7 @@ def pomessage(message,priority,attachment):
       "html": 1,
       "priority": priority,
       "message": "Status of househould energy:" + message ,
+      "title": "Househould energy",
      }
     )
 
@@ -164,7 +167,7 @@ def readinverter():
   now = int(re.search(r'var\s+webdata_now_p\s*=\s*"([^"]+)"', inverter.text).group(1))
  except:
 #  logging.warning('inverter could not read from: ' + inverterurl)
-  logging.warning('could not open/read json ' + inverterurl)
+  logging.warning('could not open/read json from inverter ' + inverterurl)
   total = -1
   now = 0
   
@@ -404,30 +407,35 @@ def createimage(imagewidth,imageheight):
   y += 10
 #  draw.text((0,y), 'inverter total: ' + str(round(inverter_total)) + 'kWh', font = detailfont, fill = 'white')
 #  y += 10
-  draw.text((0,y), 'inverter adj:   ' + str(round(inverter_adj)) + 'kWh', font = detailfont, fill = 'white')
+  if inverter_adj >= 0:
+   draw.text((0,y), 'inverter adj:   ' + str(round(inverter_adj)) + 'kWh', font = detailfont, fill = 'white')
+  else:
+   draw.text((0,y), 'inverter adj:   0kWh', font = detailfont, fill = 'gray')  
   y += 10
   #########compare current consumption and current provided over inverter to know how much of current consumption cames from sun
   draw.text((0,y), 'cur.req.prov. by sun (' + str(rateconsumptionfromsun) + ')', font = detailfont, fill = 'white')
   y += 12
   try: 
-   draw.rectangle(((0,y,int(imagewidth / 100 * rateconsumptionfromsun),y+4)), fill = colorbar(rateconsumptionfromsun), width = 1)
-   #draw.text((60,y),str(rateconsumptionfromsun) + '%', font = detailfont, fill = 'white')
+   if rateconsumptionfromsun > 0:
+    draw.rectangle(((0,y,int(imagewidth / 100 * rateconsumptionfromsun),y+4)), fill = colorbar(rateconsumptionfromsun), width = 1)
   except: pass
   y += 3
   #########compare current provided over inverter and current consumption to know how much of current solar power are used from my household
   draw.text((0,y), 'cur.use of PV energy (' + str(ratesolarpowerforhousehold) + ')', font = detailfont, fill = 'white')  
   y += 12
   try:
-   draw.rectangle((0,y,int(imagewidth / 100 * ratesolarpowerforhousehold),y+4), fill = colorbar(ratesolarpowerforhousehold), width = 1)
-   #draw.text((60,y),str(ratesolarpowerforhousehold) + '%', font = detailfont, fill = 'white')
-  
+   if ratesolarpowerforhousehold > 0:
+    draw.rectangle((0,y,int(imagewidth / 100 * ratesolarpowerforhousehold),y+4), fill = colorbar(ratesolarpowerforhousehold), width = 1)
   except: pass
   y += 3
   #########compare complete provided from interver exclude the adjustemt with the complete provided over electricitymeter out to net to know how much of collected sun energy i use myself
-  draw.text((0,y), str(round(inverter_adj - electricitymeter_total_out)) + 'kWh in / ' + str(round(electricitymeter_total_out)) + 'kWh out (' + str(rateinverteradjvselectricimetertotalout) + ')', font = detailfont, fill = 'white')
-  y += 12
-  draw.rectangle((0,y,int(imagewidth / 100 * rateinverteradjvselectricimetertotalout),y+4), fill = colorbar(rateinverteradjvselectricimetertotalout), width = 1)
-  #draw.text((60,y),str(rateinverteradjvselectricimetertotalout) + '%', font = detailfont, fill = 'white')
+  if (inverter_adj >= 0):
+   draw.text((0,y), str(round(inverter_adj - electricitymeter_total_out)) + 'kWh in / ' + str(round(electricitymeter_total_out)) + 'kWh out (' + str(rateinverteradjvselectricimetertotalout) + ')', font = detailfont, fill = 'white')
+   y += 12
+   draw.rectangle((0,y,int(imagewidth / 100 * rateinverteradjvselectricimetertotalout),y+4), fill = colorbar(rateinverteradjvselectricimetertotalout), width = 1)
+  else:
+   draw.text((0,y), '...kWh in / ' + str(round(electricitymeter_total_out)) + 'kWh out', font = detailfont, fill = 'gray')
+   y += 12
   
  if imagestyle == 'pretty':
   #######house
@@ -469,7 +477,7 @@ def output(device):
    except:
     logging.info(exportpathfile + 'could not saved')
  device.display(outputimage)
- logging.debug('show an display')
+ logging.debug('show on display')
  pomessage(po_message,po_prio,po_attachment)
  
 #######################################################
