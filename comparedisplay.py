@@ -38,7 +38,7 @@ except:
  sys.exit("\033[91m {}\033[00m" .format('any needed package is not aviable. Please check README.md to check which components should be installed via pip3".'))
 
 logging.getLogger("urllib3")
-logging.basicConfig(filename='/var/log/householdenergy.log', level=logging.DEBUG, encoding='utf-8', format='%(asctime)s:%(levelname)s:%(message)s')
+logging.basicConfig(filename='/var/log/householdenergy.log', level=logging.WARNING, encoding='utf-8', format='%(asctime)s:%(levelname)s:%(message)s')
 
 ##### import config.json
 try:
@@ -60,6 +60,14 @@ KEY_PRESS_PIN  = 13
 GPIO.setmode(GPIO.BCM) 
 #GPIO.cleanup()
 GPIO.setup(KEY_PRESS_PIN,   GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+
+##### enable pushovermessages
+try: 
+ cf['pushover']['messages']
+ if cf['pushover']['messages'] == True: pushovermessages = True
+ else: pushovermessages = False
+except: 
+ pushovermessages = False
 
 def inverterurl():
  logging.debug('provide url: ' + 'http://' + cf['inverter']['user'] + ':' + quote(cf['inverter']['pw']) + '@' + cf['inverter']['address'] + '/' + cf['inverter']['site'])
@@ -106,6 +114,36 @@ def doublecheck():
   sys.exit("\033[91m {}\033[00m" .format('exit: is already running'))
  logging.debug('check no multiply starts')
 
+try:
+ def pomessage(message,priority,attachment):
+  if attachment == True:
+   r = requests.post(
+    "https://api.pushover.net/1/messages.json", data = {
+     "token": cf["pushover"]["apikey"],
+     "user": cf["pushover"]["userkey"],
+     "html": 1,
+     "priority": priority,
+     "message": "Status of househould energy:" + message ,
+    }
+    ,
+    files = {
+     "attachment": ("status.gif", open(str(cf['imageexport']['path']), "rb"), "image/gif")
+    }
+   )
+  else:
+   r = requests.post(
+    "https://api.pushover.net/1/messages.json", data = {
+     "token": cf["pushover"]["apikey"],
+     "user": cf["pushover"]["userkey"],
+     "html": 1,
+     "priority": priority,
+     "message": "Status of househould energy:" + message ,
+    }
+   )
+
+except:
+ pass
+ 
 #######################################################
 #
 # read and calculate
@@ -207,6 +245,7 @@ def calculate():
  except: 
   inverter_time = datetime(1977, 1, 1)
   logging.debug('set last inverter read time to 1. Jan 1970')
+  if pushovermessages == True: pomessage('system seams to be restarted',1,False)
  
  global inverter_total
  global inverter_adj
@@ -235,6 +274,7 @@ def calculate():
   electricitymeteronline = True
  else:
   logging.warning('electricitymeter could not found')
+  if pushovermessages == True: pomessage('electricitymeter could not found',1,True)
   electricitymeteronline = False
   logging.warning(electricitymeterurl + ' could not read')
   try: electricitymeter_total_in = electricitymeter_total_in
@@ -249,6 +289,14 @@ def calculate():
 
  global electricitymeter_now
  electricitymeter_now = e_now
+ 
+ if pushovermessages == True: 
+  global lastnegativepowerusagemessage
+  try: lastnegativepowerusagemessage
+  except: lastnegativepowerusagemessage = datetime(1977, 1, 1)
+  if electricitymeter_now < -50 and (lastnegativepowerusagemessage <= datetime.now() - timedelta(minutes=15)):
+   pomessage('electricitymeter now:' + str(electricitymeter_now),0,True)
+   lastnegativepowerusagemessage = datetime.now()
 
 #calculate others 
  global consumption
@@ -286,8 +334,9 @@ def calculate():
 
 def colorbar(rate):
  if rate > 80: color = 'green'
- elif rate > 60: color = 'orange'
- elif rate > 40: color = 'yellow'
+ elif rate > 70: color = 'yellowgreen'
+ elif rate > 60: color = 'yellow'
+ elif rate > 40: color = 'orange'
  else: color = 'red'
  return(color)
  
