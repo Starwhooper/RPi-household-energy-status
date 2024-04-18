@@ -62,11 +62,17 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(KEY_PRESS_PIN,   GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
 
 def inverterurl():
+ logging.debug('provide url: ' + 'http://' + cf['inverter']['user'] + ':' + quote(cf['inverter']['pw']) + '@' + cf['inverter']['address'] + '/' + cf['inverter']['site'])
  return('http://' + cf['inverter']['user'] + ':' + quote(cf['inverter']['pw']) + '@' + cf['inverter']['address'] + '/' + cf['inverter']['site'])
 
 def electricitymeterurl():
+ logging.debug('provide url: ' + 'http://' + cf['electricitymeter']['address'] + '/' + cf['electricitymeter']['site'])
  return('http://' + cf['electricitymeter']['address'] + '/' + cf['electricitymeter']['site'])
 
+def plugurl(i):
+ logging.debug('provide url: ' + 'http://' + cf['plugs'][i]['address'] + '/' + cf['plugs'][i]['site'])
+ return('http://' + cf['plugs'][i]['address'] + '/' + cf['plugs'][i]['site'])
+ 
 def prepare():
  #####global vars with const value
  ## font
@@ -102,7 +108,7 @@ def doublecheck():
 
 #######################################################
 #
-# read an calculate
+# read and calculate
 #
 #######################################################
 
@@ -114,9 +120,11 @@ def readinverter():
   total = float(re.search(r'var\s+webdata_total_e\s*=\s*"([^"]+)"', inverter.text).group(1))
   now = int(re.search(r'var\s+webdata_now_p\s*=\s*"([^"]+)"', inverter.text).group(1))
  except:
-  logging.warning('inverter could not read from: ' + inverterurl)
+#  logging.warning('inverter could not read from: ' + inverterurl)
+  logging.warning('could not open/read json ' + inverterurl)
   total = -1
   now = 0
+  
  return(total,now)
     
 #####read electricitymeter
@@ -129,21 +137,76 @@ def readelectricitymeter():
   total_out = int(json_content['StatusSNS']['Power']['Total_out'])
   now = int(json_content['StatusSNS']['Power']['Power_curr'])
  except:
+  logging.warning('could not open/read json ' + electricitymeterurl)
   total_in = -1
   total_out = -1
   now = 0
  return(total_in,total_out,now)
 
+def readplug(i):
+ try: 
+  cf['plugs'][i]['address']
+  try:
+   plug = requests.get(plugurl(i), timeout=5)
+   json_content = plug.json()
+   now = int(json_content['StatusSNS']['ENERGY']['Power'])
+  except:
+   logging.warning('could not open/read json ' + plugurl(i))
+   now = 0
+ except:
+  logging.info('plug ' + i + 'has no adress in config.json file')
+  now = 0
+ return(now)
+
 ##### calculate values
 def calculate():
-#calculate inverter
+#calculate plugs
+ global plug1
+ try: plug1
+ except: plug1 = 0
+
+ global plug2
+ try: plug2
+ except: plug2 = 0
+ 
+ global plug3
+ try: plug3
+ except: plug3 = 0
+ 
+ global plug4
+ try: plug4
+ except: plug4 = 0
+ 
+ try:
+  plug1 = readplug("1")
+ except:
+  plug1 = 0
+
+ try:
+  plug2 = readplug("2")
+ except:
+  plug2 = 0
+
+ try:
+  plug3 = readplug("3")
+ except:
+  plug3 = 0
+
+ try:
+  plug4 = readplug("4")
+ except:
+  plug4 = 0
+
+#calculate inverter  
  global inverter_now
  try: inverter_now
  except: inverter_now = 0
  
  global inverter_time
  try: inverter_time
- except: inverter_time = datetime(1977, 1, 1)
+ except: 
+  inverter_time = datetime(1977, 1, 1)
+  logging.debug('set last inverter read time to 1. Jan 1970')
  
  global inverter_total
  global inverter_adj
@@ -240,7 +303,11 @@ def createimage(imagewidth,imageheight):
  try: imagestyle
  except: imagestyle = cf['imagestyle']
  
- outputimage = Image.new(mode="RGB", size=(imagewidth,imageheight))
+ if imagestyle == 'pretty':
+  outputimage = Image.open(os.path.split(os.path.abspath(__file__))[0] + '/wp_pretty.gif').convert("RGB")
+ else:
+  outputimage = Image.new(mode="RGB", size=(imagewidth,imageheight))
+ 
  draw = ImageDraw.Draw(outputimage)
  y=0
 
@@ -287,13 +354,9 @@ def createimage(imagewidth,imageheight):
   
  if imagestyle == 'pretty':
   #######house
-  draw.rectangle([(40,50),(imagewidth-40,imagewidth-20-15)], fill = "black", outline = "white", width = 3)
-  draw.line([(40-3,50+3),(imagewidth/2,26)], fill = "red", width = 6) #left roof
-  draw.line([(imagewidth-40+3,50+3),(imagewidth/2,26)], fill = "red", width = 6) #right roof
   draw.text((45,65), str(consumption) + 'W', font = font, fill = 'Yellow')
   draw.text((45,75), str(electricitymeter_total_in) + 'kWh', font = font, fill = 'Yellow')
   #######sun
-  draw.ellipse([(-40,-40),(40,40)], fill = "yellow")
   if inverter_now >= 1:
    pass
    draw.ellipse([(-40-sunbeam,-40-sunbeam),(40+sunbeam,40+sunbeam)], outline = "yellow")
@@ -301,14 +364,14 @@ def createimage(imagewidth,imageheight):
    if sunbeam >= 4*4: sunbeam = 0
   draw.text((1,11), str(inverter_now) + 'W', font = font, fill = 'black')
   #######powerline
-  draw.line([(imagewidth-15,10),(imagewidth-20,40)], fill = "gray", width = 2)
-  draw.line([(imagewidth-15,10),(imagewidth-10,40)], fill = "gray", width = 2)
-  draw.line([(imagewidth-25,20),(imagewidth-5,20)], fill = "gray", width = 2)
-  draw.line([(imagewidth-23,25),(imagewidth-7,25)], fill = "gray", width = 2)
   draw.text((imagewidth-30,50), str(electricitymeter_now) + 'W', font = font, fill = 'white')
   #######note
   draw.text((25,95), 'powered by ' + powersource, font = font, fill = 'Yellow')
-  
+  if plug1 > 0: draw.text((0,105), '1=' + str(plug1) + 'W', font = font, fill = 'Yellow')
+  if plug2 > 0: draw.text((30,105), '2=' + str(plug2) + 'W', font = font, fill = 'Yellow')
+  if plug3 > 0: draw.text((60,105), '3=' + str(plug3) + 'W', font = font, fill = 'Yellow')
+  if plug4 > 0: draw.text((90,105), '4=' + str(plug4) + 'W', font = font, fill = 'Yellow')
+
 #######################################################
 #
 # output
