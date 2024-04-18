@@ -38,7 +38,11 @@ except:
  sys.exit("\033[91m {}\033[00m" .format('any needed package is not aviable. Please check README.md to check which components should be installed via pip3".'))
 
 logging.getLogger("urllib3")
-logging.basicConfig(filename='/var/log/householdenergy.log', level=logging.WARNING, encoding='utf-8', format='%(asctime)s:%(levelname)s:%(message)s')
+logging.basicConfig(
+# filename='/var/log/householdenergy.log', 
+ level=logging.WARNING, encoding='utf-8', 
+ format='%(asctime)s:%(levelname)s:%(message)s'
+)
 
 ##### import config.json
 try:
@@ -60,14 +64,6 @@ KEY_PRESS_PIN  = 13
 GPIO.setmode(GPIO.BCM) 
 #GPIO.cleanup()
 GPIO.setup(KEY_PRESS_PIN,   GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
-
-##### enable pushovermessages
-try: 
- cf['pushover']['messages']
- if cf['pushover']['messages'] == True: pushovermessages = True
- else: pushovermessages = False
-except: 
- pushovermessages = False
 
 def inverterurl():
  logging.debug('provide url: ' + 'http://' + cf['inverter']['user'] + ':' + quote(cf['inverter']['pw']) + '@' + cf['inverter']['address'] + '/' + cf['inverter']['site'])
@@ -114,35 +110,44 @@ def doublecheck():
   sys.exit("\033[91m {}\033[00m" .format('exit: is already running'))
  logging.debug('check no multiply starts')
 
-try:
- def pomessage(message,priority,attachment):
-  if attachment == True:
-   r = requests.post(
-    "https://api.pushover.net/1/messages.json", data = {
-     "token": cf["pushover"]["apikey"],
-     "user": cf["pushover"]["userkey"],
-     "html": 1,
-     "priority": priority,
-     "message": "Status of househould energy:" + message ,
-    }
-    ,
-    files = {
-     "attachment": ("status.gif", open(str(cf['imageexport']['path']), "rb"), "image/gif")
-    }
-   )
-  else:
-   r = requests.post(
-    "https://api.pushover.net/1/messages.json", data = {
-     "token": cf["pushover"]["apikey"],
-     "user": cf["pushover"]["userkey"],
-     "html": 1,
-     "priority": priority,
-     "message": "Status of househould energy:" + message ,
-    }
-   )
 
-except:
- pass
+def pomessage(message,priority,attachment):
+ try: 
+  cf['pushover']['messages']
+  if cf['pushover']['messages'] == True: pushovermessages = True
+  pushovermessages = True
+ except: 
+  pushovermessages = False
+ 
+ if pushovermessages == True:
+  if message != "":
+   logging.debug('will send po message')
+   if attachment == True:
+    time.sleep(1)
+    r = requests.post(
+     "https://api.pushover.net/1/messages.json", data = {
+      "token": cf["pushover"]["apikey"],
+      "user": cf["pushover"]["userkey"],
+      "html": 1,
+      "priority": priority,
+      "message": "Status of househould energy:" + message ,
+     }
+     ,
+     files = {
+      "attachment": ("status.gif", open(str(cf['imageexport']['path']), "rb"), "image/gif")
+     }
+    )
+   else:
+    r = requests.post(
+     "https://api.pushover.net/1/messages.json", data = {
+      "token": cf["pushover"]["apikey"],
+      "user": cf["pushover"]["userkey"],
+      "html": 1,
+      "priority": priority,
+      "message": "Status of househould energy:" + message ,
+     }
+    )
+
  
 #######################################################
 #
@@ -184,13 +189,14 @@ def readelectricitymeter():
 def readplug(i):
  try: 
   cf['plugs'][i]['address']
-  try:
-   plug = requests.get(plugurl(i), timeout=5)
-   json_content = plug.json()
-   now = int(json_content['StatusSNS']['ENERGY']['Power'])
-  except:
-   logging.warning('could not open/read json ' + plugurl(i))
-   now = 0
+  if len(cf['plugs'][i]['address']) >= 8:
+   try:
+    plug = requests.get(plugurl(i), timeout=5)
+    json_content = plug.json()
+    now = int(json_content['StatusSNS']['ENERGY']['Power'])
+   except:
+    logging.warning('could not open/read json ' + plugurl(i))
+    now = 0
  except:
   logging.info('plug ' + i + 'has no adress in config.json file')
   now = 0
@@ -199,6 +205,16 @@ def readplug(i):
 ##### calculate values
 def calculate():
 #calculate plugs
+ global po_message
+ global po_prio
+ global po_attachment
+ po_message = ""
+ po_prio = 0
+ po_attachment = False
+ global lastnegativepowerusagemessage
+ try: lastnegativepowerusagemessage
+ except: lastnegativepowerusagemessage = datetime(1977, 1, 1)
+ 
  global plug1
  try: plug1
  except: plug1 = 0
@@ -245,7 +261,8 @@ def calculate():
  except: 
   inverter_time = datetime(1977, 1, 1)
   logging.debug('set last inverter read time to 1. Jan 1970')
-  if pushovermessages == True: pomessage('system seams to be restarted',1,False)
+  po_message = 'system seams to be restarted'
+  po_prio = 1
  
  global inverter_total
  global inverter_adj
@@ -274,7 +291,9 @@ def calculate():
   electricitymeteronline = True
  else:
   logging.warning('electricitymeter could not found')
-  if pushovermessages == True: pomessage('electricitymeter could not found',1,True)
+  po_message = 'electricitymeter could not found'
+  po_prio = 1
+  po_attachment = True
   electricitymeteronline = False
   logging.warning(electricitymeterurl + ' could not read')
   try: electricitymeter_total_in = electricitymeter_total_in
@@ -290,13 +309,10 @@ def calculate():
  global electricitymeter_now
  electricitymeter_now = e_now
  
- if pushovermessages == True: 
-  global lastnegativepowerusagemessage
-  try: lastnegativepowerusagemessage
-  except: lastnegativepowerusagemessage = datetime(1977, 1, 1)
-  if electricitymeter_now < -50 and (lastnegativepowerusagemessage <= datetime.now() - timedelta(minutes=15)):
-   pomessage('electricitymeter now:' + str(electricitymeter_now),0,True)
-   lastnegativepowerusagemessage = datetime.now()
+ if electricitymeter_now < -50 and (lastnegativepowerusagemessage <= datetime.now() - timedelta(minutes=15)):
+  po_message = 'electricitymeter now: ' + str(electricitymeter_now)
+  po_attachment = True
+  lastnegativepowerusagemessage = datetime.now()
 
 #calculate others 
  global consumption
@@ -387,19 +403,25 @@ def createimage(imagewidth,imageheight):
   #########compare current consumption and current provided over inverter to know how much of current consumption cames from sun
   draw.text((0,y), 'cur. req. prov. by sun', font = detailfont, fill = 'white')
   y += 12
-  try: draw.rectangle(((0,y,int(imagewidth / 100 * rateconsumptionfromsun),y+4)), fill = colorbar(rateconsumptionfromsun), width = 1)
+  try: 
+   draw.rectangle(((0,y,int(imagewidth / 100 * rateconsumptionfromsun),y+4)), fill = colorbar(rateconsumptionfromsun), width = 1)
+   draw.text((60,y),str(rateconsumptionfromsun) + '%', font = detailfont, fill = 'white')
   except: pass
   y += 3
   #########compare current provided over inverter and current consumption to know how much of current solar power are used from my household
   draw.text((0,y), 'cur. use of PV energy', font = detailfont, fill = 'white')  
   y += 12
-  try: draw.rectangle((0,y,int(imagewidth / 100 * ratesolarpowerforhousehold),y+4), fill = colorbar(ratesolarpowerforhousehold), width = 1)
+  try:
+   draw.rectangle((0,y,int(imagewidth / 100 * ratesolarpowerforhousehold),y+4), fill = colorbar(ratesolarpowerforhousehold), width = 1)
+   draw.text((60,y),str(ratesolarpowerforhousehold) + '%', font = detailfont, fill = 'white')
+  
   except: pass
   y += 3
   #########compare complete provided from interver exclude the adjustemt with the complete provided over electricitymeter out to net to know how much of collected sun energy i use myself
   draw.text((0,y), str(round(inverter_adj - electricitymeter_total_out)) + 'kWh in vs. ' + str(round(electricitymeter_total_out)) + 'kWh out', font = detailfont, fill = 'white')
   y += 12
   draw.rectangle((0,y,int(imagewidth / 100 * rateinverteradjvselectricimetertotalout),y+4), fill = colorbar(rateinverteradjvselectricimetertotalout), width = 1)
+  draw.text((60,y),str(rateinverteradjvselectricimetertotalout) + '%', font = detailfont, fill = 'white')
   
  if imagestyle == 'pretty':
   #######house
@@ -442,6 +464,7 @@ def output(device):
     logging.info(exportpathfile + 'could not saved')
  device.display(outputimage)
  logging.debug('show an display')
+ pomessage(po_message,po_prio,po_attachment)
  
 #######################################################
 #
