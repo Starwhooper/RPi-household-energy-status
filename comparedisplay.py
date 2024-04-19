@@ -40,7 +40,7 @@ except:
 logging.getLogger("urllib3")
 logging.basicConfig(
  filename='/var/log/householdenergy.log', 
-# level=logging.DEBUG, encoding='utf-8', 
+ #level=logging.DEBUG, encoding='utf-8', 
  level=logging.WARNING, encoding='utf-8', 
  format='%(asctime)s:%(levelname)s:%(message)s'
 )
@@ -61,10 +61,26 @@ except:
  logging.critical('file ' + cf['luma']['demo_opts.py']['folder'] + '/demo_opts.py not found. Please check config.json or do sudo git clone https://github.com/rm-hull/luma.examples /opt/luma.examples')
  sys.exit("\033[91m {}\033[00m" .format('file ' + cf['luma']['demo_opts.py']['folder'] + '/demo_opts.py not found. Please check config.json or do sudo git clone https://github.com/rm-hull/luma.examples /opt/luma.examples'))
 
+KEY_UP_PIN     = 19 #6 
+KEY_DOWN_PIN   = 6 #19
+KEY_LEFT_PIN   = 26 #5
+KEY_RIGHT_PIN  = 5 #26
 KEY_PRESS_PIN  = 13
+KEY1_PIN       = 16 #21
+KEY2_PIN       = 20
+KEY3_PIN       = 21 #16
+
 GPIO.setmode(GPIO.BCM) 
 #GPIO.cleanup()
+GPIO.setup(KEY_UP_PIN,      GPIO.IN, pull_up_down=GPIO.PUD_UP)    # Input with pull-up
+GPIO.setup(KEY_DOWN_PIN,    GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Input with pull-up
+GPIO.setup(KEY_LEFT_PIN,    GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Input with pull-up
+GPIO.setup(KEY_RIGHT_PIN,   GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
 GPIO.setup(KEY_PRESS_PIN,   GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull-up
+GPIO.setup(KEY1_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP)      # Input with pull-up
+GPIO.setup(KEY2_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP)      # Input with pull-up
+GPIO.setup(KEY3_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP)      # Input with pull-up
+
 
 def inverterurl():
  logging.debug('provide url: ' + 'http://' + cf['inverter']['user'] + ':' + quote(cf['inverter']['pw']) + '@' + cf['inverter']['address'] + '/' + cf['inverter']['site'])
@@ -208,15 +224,29 @@ def readplug(i):
 ##### calculate values
 def calculate():
 #calculate plugs
+ global lastcalculate
+ try: lastcalculate
+ except: lastcalculate = datetime(1970, 1, 1)
+
+ if lastcalculate >= (datetime.now() - timedelta(seconds=cf['calculationrefresh'])):
+  logging.debug('skip calculation')
+  return
+ logging.debug('start calculation')
+ 
  global po_message
  global po_prio
  global po_attachment
  po_message = ""
  po_prio = 0
  po_attachment = False
+
+ if lastcalculate == datetime(1970,1,1):
+  po_message = 'in reason of none previous calculation, the system seams to be restarted'
+  po_prio = 1
+
  global lastnegativepowerusagemessage
  try: lastnegativepowerusagemessage
- except: lastnegativepowerusagemessage = datetime(1977, 1, 1)
+ except: lastnegativepowerusagemessage = datetime(1970, 1, 1)
  
  global plug1
  try: plug1
@@ -262,10 +292,8 @@ def calculate():
  global inverter_time
  try: inverter_time
  except: 
-  inverter_time = datetime(1977, 1, 1)
+  inverter_time = datetime(1970, 1, 1)
   logging.debug('set last inverter read time to 1. Jan 1970')
-  po_message = 'system seams to be restarted'
-  po_prio = 1
  
  global inverter_total
  global inverter_adj
@@ -348,6 +376,7 @@ def calculate():
   rateinverteradjvselectricimetertotalout = int(100 / inverter_adj * (selfusedsunenergy))
  except:
   rateinverteradjvselectricimetertotalout = 0
+ lastcalculate = datetime.now()
 
 #######################################################
 #
@@ -362,7 +391,39 @@ def colorbar(rate):
  elif rate > 40: color = 'orange'
  else: color = 'red'
  return(color)
+
+def pagetoshow(operation = ""):
+ pages = ['detail','pretty','blank']
+ global pagecounter
+ try: pagecounter
+ except: pagecounter = 0
  
+ global lastpagechange
+ try: lastpagechange
+ except: lastpagechange = datetime.now()
+ 
+ if lastpagechange < (datetime.now() - timedelta(seconds=1)) or lastpagechange > datetime.now():
+  if operation == "next":
+   lastpagechange = datetime.now()
+   pagecounter += 1
+   logging.debug(str(lastpagechange) + 'next')
+  elif operation == "previous":
+   lastpagechange = datetime.now()
+   pagecounter -= 1
+   logging.debug(str(lastpagechange) + 'prev')
+  elif operation == "stay30":
+   lastpagechange = datetime.now() + timedelta(seconds=30)
+   print(str(lastpagechange) + 'stay30')
+  elif lastpagechange < (datetime.now() - timedelta(seconds=cf['pagerotation'])):
+   lastpagechange = datetime.now()
+   pagecounter += 1
+   logging.debug(str(lastpagechange) + 'rotate')
+ else:
+  logging.debug(str(lastpagechange) + 'ignored')
+ 
+ pageid = pagecounter % len(pages)
+ return(pages[pageid])
+  
 def createimage(imagewidth,imageheight):
  global outputimage
  global sunbeam
@@ -372,8 +433,21 @@ def createimage(imagewidth,imageheight):
  try: sunkwh
  except: sunkwh = 'tot'
  global imagestyle
- try: imagestyle
- except: imagestyle = cf['imagestyle']
+ 
+ if GPIO.input(KEY_PRESS_PIN) == 0: # button is released
+  imagestyle = pagetoshow('next')
+  logging.info('changes imagestyle to next')
+ elif GPIO.input(KEY_RIGHT_PIN) == 0: # button is released
+  imagestyle = pagetoshow('next')
+  logging.info('changes imagestyle to next')
+ elif GPIO.input(KEY_LEFT_PIN) == 0: # button is released
+  imagestyle = pagetoshow('previous')
+  logging.info('changes imagestyle to previous')
+ elif GPIO.input(KEY_DOWN_PIN) == 0: # button is released
+  imagestyle = pagetoshow('stay30')
+  logging.info('stay 30 sec. on current imagestyle')
+ else:
+  imagestyle = pagetoshow()
  
  if imagestyle == 'pretty':
   outputimage = Image.open(os.path.split(os.path.abspath(__file__))[0] + '/wp_pretty.gif').convert("RGB")
@@ -382,14 +456,6 @@ def createimage(imagewidth,imageheight):
  
  draw = ImageDraw.Draw(outputimage)
  y=0
-
- if GPIO.input(KEY_PRESS_PIN) == 0: # button is released
-  if imagestyle == 'detail':
-   imagestyle = 'pretty'
-   logging.info('changes imagestyle to pretty')
-  elif imagestyle == 'pretty':
-   imagestyle = 'detail'
-   logging.info('changes imagestyle to detail')
   
  if imagestyle == 'detail':
   detailfont = ImageFont.truetype(cf['font']['ttffile'], 10)#cf['font']['ttfsize'])
@@ -464,9 +530,14 @@ def createimage(imagewidth,imageheight):
 #######################################################
 
 def output(device):
+ device.display(outputimage)
+ logging.debug('show on display')
+ pomessage(po_message,po_prio,po_attachment)
+
+def saveimage():
  global lastimageexport
  try: lastimageexport
- except: lastimageexport = datetime(1977, 1, 1)
+ except: lastimageexport = datetime(1970, 1, 1)
  if lastimageexport <= datetime.now() - timedelta(seconds=cf['imageexport']['intervall']):
   if cf['imageexport']['active'] == True:
    exportpathfile = cf['imageexport']['path']
@@ -476,10 +547,7 @@ def output(device):
     lastimageexport = datetime.now()
    except:
     logging.info(exportpathfile + 'could not saved')
- device.display(outputimage)
- logging.debug('show on display')
- pomessage(po_message,po_prio,po_attachment)
- 
+  
 #######################################################
 #
 # start
@@ -490,11 +558,13 @@ def main():
 # doublecheck() #ensure that only one instance is running at the same time
  prepare()
  device = get_device()
+
  while True:
   calculate()
   createimage(device.width,device.height)
   output(device)
-  time.sleep(cf['imagerefresh'])
+  saveimage()
+  time.sleep(0.1)
 
 if __name__ == '__main__':
  try:
