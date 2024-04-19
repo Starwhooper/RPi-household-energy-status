@@ -530,24 +530,32 @@ def createimage(imagewidth,imageheight):
 #######################################################
 
 def output(device):
- device.display(outputimage)
- logging.debug('show on display')
- pomessage(po_message,po_prio,po_attachment)
+ try:
+  device.display(outputimage)
+  logging.debug('show on display')
+ except:
+  loggin.error('show image on display not possible')
+ try:
+  pomessage(po_message,po_prio,po_attachment)
+ except:
+  loggin.warning('sendmessage after show image on display not possible')
 
 def saveimage():
  global lastimageexport
  try: lastimageexport
  except: lastimageexport = datetime(1970, 1, 1)
- if lastimageexport <= datetime.now() - timedelta(seconds=cf['imageexport']['intervall']):
-  if cf['imageexport']['active'] == True:
-   exportpathfile = cf['imageexport']['path']
-   try:
-    outputimage.save(exportpathfile)
-    logging.info('saved current displaycontent to: ' + exportpathfile)
-    lastimageexport = datetime.now()
-   except:
-    logging.info(exportpathfile + 'could not saved')
-  
+ try:
+  if lastimageexport <= datetime.now() - timedelta(seconds=cf['imageexport']['intervall']):
+   if cf['imageexport']['active'] == True:
+    exportpathfile = cf['imageexport']['path']
+    try:
+     outputimage.save(exportpathfile)
+     logging.info('saved current displaycontent to: ' + exportpathfile)
+     lastimageexport = datetime.now()
+    except:
+     logging.info(exportpathfile + 'could not saved')
+ except:
+  logging.warning('image could not created')
 #######################################################
 #
 # start
@@ -560,10 +568,23 @@ def main():
  device = get_device()
 
  while True:
-  calculate()
-  createimage(device.width,device.height)
-  output(device)
-  saveimage()
+  try:
+   calculate()
+  except:
+   logging.critical('issue in function "calculate"')
+  try:
+   createimage(device.width,device.height)
+  except:
+   logging.critical('issue in function "createimage"')
+  try:
+   output(device)
+  except:
+   logging.critical('issue in function "output"')
+  try:
+   saveimage()
+  except:
+   logging.critical('issue in function "saveimage"')
+
   time.sleep(0.1)
 
 if __name__ == '__main__':
