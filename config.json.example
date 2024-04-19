@@ -4,8 +4,8 @@
    "folder": "/opt/luma.examples/examples"
   }
  },
- "imagerefresh": 3,
- "imagestyle": "pretty",
+  "pagerotation":10,
+  "calculationrefresh":2,
   "imageexport": {
    "active": true,
    "path":"/dev/shm/householdenergy.gif",
@@ -19,7 +19,7 @@
   "offset": -100
  },
  "electricitymeter": {
-  "address": "192.168.179.37",
+  "address": "192.168.179.137",
   "site": "cm?cmnd=STATUS+0",
   "since": ""
  },
