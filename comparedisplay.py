@@ -40,18 +40,22 @@ except:
 logging.getLogger("urllib3")
 logging.basicConfig(
  filename='/var/log/householdenergy.log', 
- #level=logging.DEBUG, encoding='utf-8', 
+# level=logging.DEBUG, encoding='utf-8', 
  level=logging.WARNING, encoding='utf-8', 
  format='%(asctime)s:%(levelname)s:%(message)s'
 )
 
+#set const
+globals()['pages'] = ['detail','pretty'] #,'blank']
+globals()['scriptroot'] = os.path.split(os.path.abspath(__file__))[0]
+
 ##### import config.json
 try:
- with open(os.path.split(os.path.abspath(__file__))[0] + '/config.json','r') as file:
+ with open(scriptroot + '/config.json','r') as file:
   cf = json.loads(file.read())
 except:
- logging.critical('The configuration file ' + os.path.split(os.path.abspath(__file__))[0] + '/config.json does not exist or has incorrect content. Please rename the file config.json.example to config.json and change the content as required ')
- sys.exit("\033[91m {}\033[00m" .format('exit: The configuration file ' + os.path.split(os.path.abspath(__file__))[0] + '/config.json does not exist or has incorrect content. Please rename the file config.json.example to config.json and change the content as required '))
+ logging.critical('The configuration file ' + scriptroot + '/config.json does not exist or has incorrect content. Please rename the file config.json.example to config.json and change the content as required ')
+ sys.exit("\033[91m {}\033[00m" .format('exit: The configuration file ' + scriptroot + '/config.json does not exist or has incorrect content. Please rename the file config.json.example to config.json and change the content as required '))
  
 ##### import module demo_opts
 try:
@@ -80,7 +84,6 @@ GPIO.setup(KEY_PRESS_PIN,   GPIO.IN, pull_up_down=GPIO.PUD_UP) # Input with pull
 GPIO.setup(KEY1_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP)      # Input with pull-up
 GPIO.setup(KEY2_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP)      # Input with pull-up
 GPIO.setup(KEY3_PIN,        GPIO.IN, pull_up_down=GPIO.PUD_UP)      # Input with pull-up
-
 
 def inverterurl():
  logging.debug('provide url: ' + 'http://' + cf['inverter']['user'] + ':' + quote(cf['inverter']['pw']) + '@' + cf['inverter']['address'] + '/' + cf['inverter']['site'])
@@ -127,17 +130,38 @@ def doublecheck():
   sys.exit("\033[91m {}\033[00m" .format('exit: is already running'))
  logging.debug('check no multiply starts')
 
+def imagepath(page = ''):
+ folder = os.path.split(cf['imageexport']['path'])[0]
+ filename = os.path.split(cf['imageexport']['path'])[1][0:len(os.path.split(cf['imageexport']['path'])[1]) - len (os.path.splitext(cf['imageexport']['path']))-2]
+ fileext = os.path.splitext(cf['imageexport']['path'])[1]
 
-def pomessage(message,priority,attachment):
+ if page == '': path = cf['imageexport']['path']
+ else: path = str(folder) + '/' + str(filename) + '_' + str(page) + str(fileext)
+ 
+ logging.debug('file exportpath: ' + str(path))
+ return(path)
+
+def pomessage(msg = '', prio = 0, attachment = False):
+ #logging.debug('msg: ' + message + ', prio: ' + priority + ', attachment : ' + attachment)
  try: 
   cf['pushover']['messages']
   if cf['pushover']['messages'] == True: pushovermessages = True
   pushovermessages = True
  except: 
   pushovermessages = False
- 
+  logger.warning('send message is not enabled in config.json')
+  
+# try:
  if pushovermessages == True:
-  if message != "":
+  logging.debug('will send message')
+  if msg != "":
+   logging.debug('found message text')
+   if attachment == True:
+    #if Path(open(str(imagepath()).is_file())) == True:
+    if os.path.isfile(imagepath(page = 'detail')) == True:
+     attachment = False
+     logging.warning('Attachment ' + imagepath(page = 'detail') + ' requested, but not found')
+    logging.warning('Attachment ' + imagepath(page = 'detail') + ' requested and found')
    logging.debug('will send po message')
    if attachment == True:
     time.sleep(1)
@@ -146,13 +170,13 @@ def pomessage(message,priority,attachment):
       "token": cf["pushover"]["apikey"],
       "user": cf["pushover"]["userkey"],
       "html": 1,
-      "priority": priority,
-      "message": "Status of househould energy:" + message ,
+      "priority": prio,
+      "message": "Status of househould energy:" + msg ,
       "title": "Househould energy",
      }
      ,
      files = {
-      "attachment": ("status.gif", open(str(cf['imageexport']['path']), "rb"), "image/gif")
+      "attachment": ("status.gif", open(str(imagept()), "rb"), "image/gif")
      }
     )
    else:
@@ -161,12 +185,12 @@ def pomessage(message,priority,attachment):
       "token": cf["pushover"]["apikey"],
       "user": cf["pushover"]["userkey"],
       "html": 1,
-      "priority": priority,
-      "message": "Status of househould energy:" + message ,
+      "priority": prio,
+      "message": "Status of househould energy:" + msg ,
       "title": "Househould energy",
      }
     )
-
+  else: logging.debug('no messagetext found')
  
 #######################################################
 #
@@ -193,7 +217,10 @@ def readinverter():
 def readelectricitymeter():
  
  try:
-  electricitymeter = requests.get(electricitymeterurl, timeout=1)
+  for i in range(3):
+   electricitymeter = requests.get(electricitymeterurl, timeout=3)
+   if electricitymeter.status_code == 200: break
+   time.sleep(1)
   json_content = electricitymeter.json()
   total_in = int(json_content['StatusSNS']['Power']['Total_in'])
   total_out = int(json_content['StatusSNS']['Power']['Total_out'])
@@ -233,16 +260,8 @@ def calculate():
   return
  logging.debug('start calculation')
  
- global po_message
- global po_prio
- global po_attachment
- po_message = ""
- po_prio = 0
- po_attachment = False
-
  if lastcalculate == datetime(1970,1,1):
-  po_message = 'in reason of none previous calculation, the system seams to be restarted'
-  po_prio = 1
+  pomessage(msg='in reason of none previous calculation, the system seams to be restarted',prio=1,attachment=False)
 
  global lastnegativepowerusagemessage
  try: lastnegativepowerusagemessage
@@ -313,6 +332,7 @@ def calculate():
   inverter_adj = inverter_total + cf['inverter']['offset']  
 
  e_total_in, e_total_out, e_now = readelectricitymeter()
+  
 
  global electricitymeter_total_in
  global electricitymeter_total_out
@@ -322,9 +342,7 @@ def calculate():
   electricitymeteronline = True
  else:
   logging.warning('electricitymeter could not found')
-  po_message = 'electricitymeter could not found'
-  po_prio = 1
-  po_attachment = True
+  pomessage(msg='electricitymeter could not found',prio=1,attachmant=False)
   electricitymeteronline = False
   logging.warning(electricitymeterurl + ' could not read')
   try: electricitymeter_total_in = electricitymeter_total_in
@@ -344,8 +362,7 @@ def calculate():
  electricitymeter_now = e_now
  
  if electricitymeter_now < -50 and (lastnegativepowerusagemessage <= datetime.now() - timedelta(minutes=15)):
-  po_message = 'electricitymeter now: ' + str(electricitymeter_now)
-  po_attachment = True
+  pomessage(msg='electricitymeter now: ' + str(electricitymeter_now),prio=0,attachment=True)
   lastnegativepowerusagemessage = datetime.now()
 
 #calculate others 
@@ -393,7 +410,7 @@ def colorbar(rate):
  return(color)
 
 def pagetoshow(operation = ""):
- pages = ['detail','pretty','blank']
+ #pages = ['detail','pretty'] #,'blank']
  global pagecounter
  try: pagecounter
  except: pagecounter = 0
@@ -450,7 +467,7 @@ def createimage(imagewidth,imageheight):
   imagestyle = pagetoshow()
  
  if imagestyle == 'pretty':
-  outputimage = Image.open(os.path.split(os.path.abspath(__file__))[0] + '/wp_pretty.gif').convert("RGB")
+  outputimage = Image.open(scriptroot + '/wp_pretty.gif').convert("RGB")
  else:
   outputimage = Image.new(mode="RGB", size=(imagewidth,imageheight))
  
@@ -535,27 +552,33 @@ def output(device):
   logging.debug('show on display')
  except:
   loggin.error('show image on display not possible')
- try:
-  pomessage(po_message,po_prio,po_attachment)
- except:
-  loggin.warning('sendmessage after show image on display not possible')
 
 def saveimage():
- global lastimageexport
- try: lastimageexport
- except: lastimageexport = datetime(1970, 1, 1)
+ exportpathfile = imagepath(page = imagestyle)
+ 
  try:
-  if lastimageexport <= datetime.now() - timedelta(seconds=cf['imageexport']['intervall']):
+  lastimageexport = os.path.getmtime(exportpathfile)
+  logging.debug('previous image ' + exportpathfile + ' from ' + str(lastimageexport))
+ except:
+  lastimageexport = datetime(1970, 1, 1)
+  logging.debug('no previous image ' + exportpathfile + ' found')
+ 
+ try:
+  if lastimageexport <= datetime.now().timestamp() - cf['imageexport']['intervall']:
+   logging.info('current image to old, would create new one')
    if cf['imageexport']['active'] == True:
-    exportpathfile = cf['imageexport']['path']
+    
     try:
      outputimage.save(exportpathfile)
      logging.info('saved current displaycontent to: ' + exportpathfile)
      lastimageexport = datetime.now()
     except:
      logging.info(exportpathfile + 'could not saved')
+   else:
+    logging.info('current image is from now')
  except:
   logging.warning('image could not created')
+
 #######################################################
 #
 # start
@@ -568,23 +591,10 @@ def main():
  device = get_device()
 
  while True:
-  try:
-   calculate()
-  except:
-   logging.critical('issue in function "calculate"')
-  try:
-   createimage(device.width,device.height)
-  except:
-   logging.critical('issue in function "createimage"')
-  try:
-   output(device)
-  except:
-   logging.critical('issue in function "output"')
-  try:
-   saveimage()
-  except:
-   logging.critical('issue in function "saveimage"')
-
+  calculate()
+  createimage(device.width,device.height)
+  output(device)
+  saveimage()
   time.sleep(0.1)
 
 if __name__ == '__main__':
