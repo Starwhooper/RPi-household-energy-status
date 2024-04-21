@@ -8,7 +8,6 @@
 #
 #######################################################
 
-
 #Logging Levels https://rollbar.com/blog/logging-in-python/#
 #    DEBUG - Detailed information, typically of interest when diagnosing problems.
 #    INFO - Confirmation of things working as expected.
@@ -16,15 +15,13 @@
 #    ERROR - A more serious problem due to which the program was unable to perform a function.
 #    CRITICAL - A serious error, indicating that the program itself may not be able to continue executing.
 
-
 ##### check if all required packages are aviable
 import sys
 try:
  from luma.core.render import canvas
- from PIL import ImageFont
- from PIL import Image
- from PIL import ImageDraw
+ from PIL import ImageFont, Image, ImageDraw
  from urllib.parse import quote
+ from datetime import datetime, timedelta  
  import RPi.GPIO as GPIO
  import json
  import logging
@@ -33,21 +30,20 @@ try:
  import requests
  import re
  import time
- from datetime import datetime, timedelta  
 except:
  sys.exit("\033[91m {}\033[00m" .format('any needed package is not aviable. Please check README.md to check which components should be installed via pip3".'))
 
 logging.getLogger("urllib3")
 logging.basicConfig(
- filename='/var/log/householdenergy.log', 
+# filename='/var/log/householdenergy.log', 
 # level=logging.DEBUG, encoding='utf-8', 
  level=logging.WARNING, encoding='utf-8', 
  format='%(asctime)s:%(levelname)s:%(message)s'
 )
 
 #set const
-globals()['pages'] = ['detail','pretty'] #,'blank']
-globals()['scriptroot'] = os.path.split(os.path.abspath(__file__))[0]
+globals()['pages'] = ['detail','pretty','blank']
+globals()['scriptroot'] = os.path.dirname(__file__)
 
 ##### import config.json
 try:
@@ -131,18 +127,18 @@ def doublecheck():
  logging.debug('check no multiply starts')
 
 def imagepath(page = ''):
- folder = os.path.split(cf['imageexport']['path'])[0]
- filename = os.path.split(cf['imageexport']['path'])[1][0:len(os.path.split(cf['imageexport']['path'])[1]) - len (os.path.splitext(cf['imageexport']['path']))-2]
- fileext = os.path.splitext(cf['imageexport']['path'])[1]
+ import tempfile
+ folder = tempfile.gettempdir()
+ filename = '/householdenergy'
+ fileext = '.gif'
 
- if page == '': path = cf['imageexport']['path']
+ if page == '': path = str(folder) + '/' + str(filename) + str(fileext)
  else: path = str(folder) + '/' + str(filename) + '_' + str(page) + str(fileext)
  
  logging.debug('file exportpath: ' + str(path))
  return(path)
 
 def pomessage(msg = '', prio = 0, attachment = False):
- #logging.debug('msg: ' + message + ', prio: ' + priority + ', attachment : ' + attachment)
  try: 
   cf['pushover']['messages']
   if cf['pushover']['messages'] == True: pushovermessages = True
@@ -151,7 +147,6 @@ def pomessage(msg = '', prio = 0, attachment = False):
   pushovermessages = False
   logger.warning('send message is not enabled in config.json')
   
-# try:
  if pushovermessages == True:
   logging.debug('will send message')
   if msg != "":
@@ -219,7 +214,7 @@ def readinverter():
   try:
    total = float(re.search(r'var\s+webdata_total_e\s*=\s*"([^"]+)"', inverter.text).group(1))
    now = int(re.search(r'var\s+webdata_now_p\s*=\s*"([^"]+)"', inverter.text).group(1))
-   print('could read values from inverter ' + inverterurl)
+   logging.debug('could read values from inverter ' + inverterurl)
   except:
    logging.warning('could not read values from inverter ' + inverterurl)
 
@@ -569,24 +564,21 @@ def saveimage():
   lastimageexport = os.path.getmtime(exportpathfile)
   logging.debug('previous image ' + exportpathfile + ' from ' + str(lastimageexport))
  except:
-  lastimageexport = datetime(1970, 1, 1)
+  lastimageexport = datetime(1970, 1, 1).timestamp()
   logging.debug('no previous image ' + exportpathfile + ' found')
  
- try:
-  if lastimageexport <= datetime.now().timestamp() - cf['imageexport']['intervall']:
-   logging.info('current image to old, would create new one')
-   if cf['imageexport']['active'] == True:
-    
-    try:
-     outputimage.save(exportpathfile)
-     logging.info('saved current displaycontent to: ' + exportpathfile)
-     lastimageexport = datetime.now()
-    except:
-     logging.info(exportpathfile + 'could not saved')
-   else:
-    logging.info('current image is from now')
- except:
-  logging.warning('image could not saved to ' + exportpathfile)
+ if lastimageexport <= datetime.now().timestamp() - cf['imageexport']['intervall']:
+  logging.info('current image to old, would create new one')
+  if cf['imageexport']['active'] == True:
+   try:
+    outputimage.save(exportpathfile)
+    logging.info('saved current displaycontent to: ' + exportpathfile)
+    lastimageexport = datetime.now()
+   except:
+    logging.warning('image could not saved to ' + exportpathfile)
+  else:
+   logging.info('current image is from now')
+  
 
 #######################################################
 #
