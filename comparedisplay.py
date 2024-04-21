@@ -43,6 +43,7 @@ logging.basicConfig(
 
 #set const
 globals()['pages'] = ['detail','pretty','blank']
+#globals()['scriptroot'] = os.path.split(os.path.abspath(__file__))[0]
 globals()['scriptroot'] = os.path.dirname(__file__)
 
 ##### import config.json
@@ -195,22 +196,32 @@ def pomessage(msg = '', prio = 0, attachment = False):
 
 #####read inverter
 def readinverter():
-# inverterread = False
  total = -1
  now = 0
+ inverterread = False
+ global inverterofflinecount
+ 
+ try: inverterofflinecount
+ except: inverterofflinecount = 0
  
  try:
   for i in range(5):
    inverter = requests.get(inverterurl, timeout=1)
    if inverter.status_code == 200: 
-#    inverterread = True
+    inverterread = True
     break
    time.sleep(1)
  except:
-  logging.warning('could not open/read from inverter ' + inverterurl + ', status = ' + str(inverter.status_code))
+  inverterofflinecount += 1
+  if inverterofflinecount >= 100:
+   logging.warning('could not open/read from inverter ' + inverterurl + ' ' + inverterofflinecount + ' times')
+   inverterofflinecount = 0
  
-# if inverterread == True:
- if inverter.status_code == 200: 
+
+ if inverterread == True:
+  if inverterofflinecount >= 1: 
+   logging.warning('could not open/read from inverter ' + inverterurl + ' ' + inverterofflinecount + ' times')
+   inverterofflinecount = 0
   try:
    total = float(re.search(r'var\s+webdata_total_e\s*=\s*"([^"]+)"', inverter.text).group(1))
    now = int(re.search(r'var\s+webdata_now_p\s*=\s*"([^"]+)"', inverter.text).group(1))
@@ -534,7 +545,7 @@ def createimage(imagewidth,imageheight):
    draw.ellipse([(-40-sunbeam,-40-sunbeam),(40+sunbeam,40+sunbeam)], outline = "yellow")
    sunbeam=sunbeam+4
    if sunbeam >= 4*4: sunbeam = 0
-  draw.text((1,11), str(inverter_now) + 'W', font = font, fill = 'black')
+  draw.text((1,2), 'sun\noffl.', font = font, fill = 'black')
   #######powerline
   draw.text((imagewidth-30,50), str(electricitymeter_now) + 'W', font = font, fill = 'white')
   #######note
@@ -543,6 +554,11 @@ def createimage(imagewidth,imageheight):
   if plug2 > 0: draw.text((30,105), '2=' + str(plug2) + 'W', font = font, fill = 'Yellow')
   if plug3 > 0: draw.text((60,105), '3=' + str(plug3) + 'W', font = font, fill = 'Yellow')
   if plug4 > 0: draw.text((90,105), '4=' + str(plug4) + 'W', font = font, fill = 'Yellow')
+
+ if imagestyle == 'blank':
+  draw.text((45,65), ':-)', font = font, fill = 'darkgray')
+
+
 
 #######################################################
 #
