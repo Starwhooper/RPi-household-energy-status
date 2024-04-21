@@ -8,7 +8,6 @@
   "calculationrefresh":2,
   "imageexport": {
    "active": true,
-   "path":"/dev/shm/householdenergy.gif",
    "intervall": 60
   },
  "inverter": {
