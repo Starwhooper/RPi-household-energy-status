@@ -4,10 +4,10 @@ I was looking for a way to measure the current energy consumption of my househol
 Basically, I'm not interested in long-term storage of the data, but rather in order to be able to spontaneously determine whether I'm currently purchasing energy from the grid or am already giving energy away to the grid operator.
 My Environtment: Landis Gyr+ E220 smartmeter with Tasmota script: https://gist.github.com/enra64/0f34a2f233068f901a75c320f3b87cd0
 
-![status](display.jpg)
-![RPi Zero without case](display_wo_case.jpg)
-![Screen pretty](householdenergyp.gif)
-![Screen detail](householdenergy.gif)
+![status](readme/display.jpg)
+![RPi Zero without case](readme/display_wo_case.jpg)
+![Screen pretty](readme/householdenergyp.gif)
+![Screen detail](readme/householdenergy.gif)
 
 You may get the case here: https://www.printables.com/de/model/258922
 
