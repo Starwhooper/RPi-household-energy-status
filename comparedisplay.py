@@ -200,17 +200,29 @@ def pomessage(msg = '', prio = 0, attachment = False):
 
 #####read inverter
 def readinverter():
+# inverterread = False
+ total = -1
+ now = 0
  
  try:
-  inverter = requests.get(inverterurl, timeout=1)
-  total = float(re.search(r'var\s+webdata_total_e\s*=\s*"([^"]+)"', inverter.text).group(1))
-  now = int(re.search(r'var\s+webdata_now_p\s*=\s*"([^"]+)"', inverter.text).group(1))
+  for i in range(5):
+   inverter = requests.get(inverterurl, timeout=1)
+   if inverter.status_code == 200: 
+#    inverterread = True
+    break
+   time.sleep(1)
  except:
-#  logging.warning('inverter could not read from: ' + inverterurl)
-  logging.warning('could not open/read json from inverter ' + inverterurl)
-  total = -1
-  now = 0
-  
+  logging.warning('could not open/read from inverter ' + inverterurl + ', status = ' + str(inverter.status_code))
+ 
+# if inverterread == True:
+ if inverter.status_code == 200: 
+  try:
+   total = float(re.search(r'var\s+webdata_total_e\s*=\s*"([^"]+)"', inverter.text).group(1))
+   now = int(re.search(r'var\s+webdata_now_p\s*=\s*"([^"]+)"', inverter.text).group(1))
+   print('could read values from inverter ' + inverterurl)
+  except:
+   logging.warning('could not read values from inverter ' + inverterurl)
+
  return(total,now)
     
 #####read electricitymeter
@@ -324,10 +336,7 @@ def calculate():
    inverter_total = inv_t
    inverter_time = datetime.now()
   else:
-   try: inverter_total
-   except: 
-    inverter_total = 0
-    logging.warning('inverter total count not found')
+   inverter_total = 0
   
   inverter_adj = inverter_total + cf['inverter']['offset']  
 
@@ -577,7 +586,7 @@ def saveimage():
    else:
     logging.info('current image is from now')
  except:
-  logging.warning('image could not created')
+  logging.warning('image could not saved to ' + exportpathfile)
 
 #######################################################
 #
@@ -591,10 +600,23 @@ def main():
  device = get_device()
 
  while True:
+  #try:
   calculate()
-  createimage(device.width,device.height)
-  output(device)
-  saveimage()
+  #except:
+  # logging.warning('issue with calculate')
+  try:
+   createimage(device.width,device.height)
+  except:
+   logging.critical('issue with createimage')
+  try:
+   output(device)
+  except:
+   logging.critical('issue with output')
+  try:
+   saveimage()
+  except:
+   logging.critical('issue with saveimage')
+  
   time.sleep(0.1)
 
 if __name__ == '__main__':
