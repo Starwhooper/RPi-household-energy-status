@@ -35,7 +35,7 @@ except:
 
 logging.getLogger("urllib3")
 logging.basicConfig(
-# filename='/var/log/householdenergy.log', 
+ filename='/var/log/householdenergy.log', 
 # level=logging.DEBUG, encoding='utf-8', 
  level=logging.WARNING, encoding='utf-8', 
  format='%(asctime)s:%(levelname)s:%(message)s'
@@ -214,13 +214,13 @@ def readinverter():
  except:
   inverterofflinecount += 1
   if inverterofflinecount >= 100:
-   logging.warning('could not open/read from inverter ' + inverterurl + ' ' + inverterofflinecount + ' times')
+   logging.warning('could not open/read from inverter ' + inverterurl + ' ' + str(inverterofflinecount) + ' times')
    inverterofflinecount = 0
  
 
  if inverterread == True:
   if inverterofflinecount >= 1: 
-   logging.warning('could not open/read from inverter ' + inverterurl + ' ' + inverterofflinecount + ' times')
+   logging.warning('could not open/read from inverter ' + inverterurl + ' ' + str(inverterofflinecount) + ' times, but now its back')
    inverterofflinecount = 0
   try:
    total = float(re.search(r'var\s+webdata_total_e\s*=\s*"([^"]+)"', inverter.text).group(1))
@@ -608,10 +608,10 @@ def main():
  device = get_device()
 
  while True:
-  #try:
-  calculate()
-  #except:
-  # logging.warning('issue with calculate')
+  try:
+   calculate()
+  except:
+   logging.warning('issue with calculate')
   try:
    createimage(device.width,device.height)
   except:
