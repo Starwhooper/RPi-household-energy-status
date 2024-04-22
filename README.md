@@ -54,6 +54,7 @@ insert line:
 If you already use it, feel free to update with
 ```bash
 cd /opt/RPi-household-energy-status
+sudo git reset --hard #that should not be required, but its very often needed on my system
 sudo git pull origin main
 ```
 
