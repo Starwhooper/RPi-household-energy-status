@@ -541,11 +541,12 @@ def createimage(imagewidth,imageheight):
   draw.text((45,75), str(electricitymeter_total_in) + 'kWh', font = font, fill = 'Yellow')
   #######sun
   if inverter_now >= 1:
-   pass
    draw.ellipse([(-40-sunbeam,-40-sunbeam),(40+sunbeam,40+sunbeam)], outline = "yellow")
+   draw.text((1,11), str(inverter_now) + 'W', font = font, fill = 'black')
    sunbeam=sunbeam+4
    if sunbeam >= 4*4: sunbeam = 0
-  draw.text((1,2), 'sun\noffl.', font = font, fill = 'black')
+  else: 
+   draw.text((1,2), 'sun\noffl.', font = font, fill = 'black')
   #######powerline
   draw.text((imagewidth-30,50), str(electricitymeter_now) + 'W', font = font, fill = 'white')
   #######note
